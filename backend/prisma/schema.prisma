@@ -1,0 +1,136 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// USUARIOS - Solo registrados con Google
+model Usuario {
+  id                        String    @id @default(uuid())
+  google_id                 String    @unique
+  email                     String
+  nombre                    String
+  creado_en                 DateTime  @default(now())
+  expira_en                 DateTime
+  refresh_token             String?   @db.Text
+  refresh_token_expira_en   DateTime?
+
+  sesiones                  Sesion[]
+  lecturas                  Lectura[]
+
+  @@map("usuarios")
+}
+
+// PLANES - Administrable desde panel
+model Plan {
+  id                    String    @id @default(uuid())
+  nombre                String
+  tipo_tirada           String    // tres_cartas | cruz_celta | rueda_del_año
+  num_cartas            Int
+  precio_base           Int       // En CLP
+  recargo_anonimo_pct   Int       // Porcentaje adicional para anónimos
+  activo                Boolean   @default(true)
+  actualizado_en        DateTime  @default(now()) @updatedAt
+
+  sesiones              Sesion[]
+
+  @@map("planes")
+}
+
+// SESIONES - Tabla central
+model Sesion {
+  id                String    @id @default(uuid())
+  usuario_id        String?
+  plan_id           String
+  sesion_origen_id  String?
+  tipo_usuario      String    // anonimo | registrado
+  pregunta          String    @db.Text
+  cartas_json       String    @db.Text
+  estado            String    // pendiente | pagada | completada | abandonada
+  token_acceso      String    // Token hasheado para anónimos
+  precio_calculado  Int       // Precio fijado al crear sesión
+  generando         Boolean   @default(false)
+  creado_en         DateTime  @default(now())
+
+  usuario           Usuario?  @relation(fields: [usuario_id], references: [id])
+  plan              Plan      @relation(fields: [plan_id], references: [id])
+  sesion_origen     Sesion?   @relation("SesionEncadenada", fields: [sesion_origen_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  sesiones_hijas    Sesion[]  @relation("SesionEncadenada")
+
+  pagos             Pago[]
+  lectura           Lectura?
+  errores           Error[]
+
+  @@index([usuario_id])
+  @@index([plan_id])
+  @@index([sesion_origen_id])
+  @@map("sesiones")
+}
+
+// PAGOS - Múltiples intentos por sesión
+model Pago {
+  id                String    @id @default(uuid())
+  sesion_id         String
+  mp_payment_id     String    @unique
+  mp_preference_id  String
+  monto             Int       // Monto total en CLP
+  precio_cobrado    Int       // Precio base al momento del cobro
+  recargo_aplicado  Int       // Porcentaje de recargo aplicado
+  estado            String    // pendiente | aprobado | rechazado | reembolsado
+  creado_en         DateTime  @default(now())
+
+  sesion            Sesion    @relation(fields: [sesion_id], references: [id])
+
+  @@index([sesion_id])
+  @@map("pagos")
+}
+
+// LECTURAS - Resultado generado por IA
+model Lectura {
+  id                 String    @id @default(uuid())
+  sesion_id          String    @unique
+  usuario_id         String?
+  ambito_detectado   String
+  interpretacion     String    @db.Text
+  expirada           Boolean   @default(false)
+  creado_en          DateTime  @default(now())
+  expira_en          DateTime?
+
+  sesion             Sesion    @relation(fields: [sesion_id], references: [id])
+  usuario            Usuario?  @relation(fields: [usuario_id], references: [id])
+
+  @@index([usuario_id])
+  @@index([expirada, expira_en])
+  @@map("lecturas")
+}
+
+// CONFIG_ADMIN - Configuraciones globales
+model ConfigAdmin {
+  id              String    @id @default(uuid())
+  clave           String    @unique
+  valor           String    @db.Text
+  actualizado_en  DateTime  @default(now()) @updatedAt
+
+  @@map("config_admin")
+}
+
+// ERRORES - Registro de errores críticos
+model Error {
+  id             String    @id @default(uuid())
+  tipo           String    // openai_fallo | webhook_fallo | lectura_fallo | bd_fallo
+  sesion_id      String?
+  mensaje        String    @db.Text
+  contexto_json  String?   @db.Text
+  estado         String    // pendiente | resuelto
+  creado_en      DateTime  @default(now())
+  resuelto_en    DateTime?
+
+  sesion         Sesion?   @relation(fields: [sesion_id], references: [id])
+
+  @@index([sesion_id])
+  @@index([estado])
+  @@map("errores")
+}
