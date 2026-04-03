@@ -1,0 +1,35 @@
+# Variables de entorno — NUNCA subir
+.env
+.env.local
+.env.test
+.env.production
+.env*.local
+
+# Documentación privada y credenciales
+devfiles/
+
+# Dependencias
+node_modules/
+
+# Build
+dist/
+build/
+.svelte-kit/
+
+# Logs
+*.log
+logs/
+
+# Prisma
+prisma/migrations/dev/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# ngrok
+*.ngrok-authtoken
