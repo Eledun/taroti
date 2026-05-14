@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 
 export default async function (fastify: FastifyInstance) {
   // POST /api/admin/auth/login - Login de admin
@@ -18,8 +19,9 @@ export default async function (fastify: FastifyInstance) {
       // Verificar credenciales
       const adminUser = process.env.ADMIN_USER;
       const adminPasswordHash = process.env.ADMIN_PASSWORD_HASH;
+      const adminJwtSecret = process.env.ADMIN_JWT_SECRET;
 
-      if (!adminUser || !adminPasswordHash) {
+      if (!adminUser || !adminPasswordHash || !adminJwtSecret) {
         return reply.status(500).send({
           error: 'Configuración de admin incompleta',
         });
@@ -39,10 +41,12 @@ export default async function (fastify: FastifyInstance) {
         });
       }
 
-      // Generar token admin
-      const token = fastify.adminJwtSign({
-        username: adminUser,
-      });
+      // Generar token admin - expires in 4 hours (14400 seconds)
+      const token = jwt.sign(
+        { username: adminUser },
+        adminJwtSecret,
+        { expiresIn: 14400 }
+      );
 
       return reply.status(200).send({
         token,

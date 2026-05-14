@@ -13,7 +13,6 @@ import jwtAdminPlugin from './plugins/jwt-admin';
 import errorHandlerPlugin from './plugins/error-handler';
 
 // Rutas
-import authRoutes from './routes/auth';
 import planesRoutes from './routes/planes';
 import sesionesRoutes from './routes/sesiones';
 import pagosRoutes from './routes/pagos';
@@ -31,10 +30,72 @@ const app = Fastify({
   },
 });
 
+// CORS manual hooks - DEBE estar ANTES de cualquier plugin o ruta
+app.addHook('onRequest', async (request, reply) => {
+  const origin = request.headers.origin;
+
+  // Solo manejamos OPTIONS aquí
+  if (request.method === 'OPTIONS') {
+    // En desarrollo, permitir todos los orígenes
+    if (process.env.NODE_ENV === 'development') {
+      reply.header('Access-Control-Allow-Origin', origin || '*');
+      reply.header('Access-Control-Allow-Credentials', 'true');
+      reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      reply.header('Access-Control-Expose-Headers', 'Content-Type, Authorization');
+      reply.header('Vary', 'Origin');
+      return reply.status(204).send();
+    }
+
+    // En producción, validar orígenes permitidos
+    const allowedOrigins = [
+      process.env.FRONTEND_URL || 'http://localhost:5173',
+    ];
+
+    if (origin && allowedOrigins.includes(origin)) {
+      reply.header('Access-Control-Allow-Origin', origin);
+      reply.header('Access-Control-Allow-Credentials', 'true');
+      reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+      reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      reply.header('Access-Control-Expose-Headers', 'Content-Type, Authorization');
+      reply.header('Vary', 'Origin');
+      return reply.status(204).send();
+    } else {
+      return reply.status(403).send({ error: 'Not allowed by CORS' });
+    }
+  }
+});
+
+app.addHook('onSend', async (request, reply, payload) => {
+  const origin = request.headers.origin;
+
+  // En desarrollo, permitir todos los orígenes
+  if (process.env.NODE_ENV === 'development') {
+    reply.header('Access-Control-Allow-Origin', origin || '*');
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header('Access-Control-Expose-Headers', 'Content-Type, Authorization');
+    reply.header('Vary', 'Origin');
+    return payload;
+  }
+
+  // En producción, validar orígenes permitidos
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:5173',
+  ];
+
+  if (origin && allowedOrigins.includes(origin)) {
+    reply.header('Access-Control-Allow-Origin', origin);
+    reply.header('Access-Control-Allow-Credentials', 'true');
+    reply.header('Access-Control-Expose-Headers', 'Content-Type, Authorization');
+    reply.header('Vary', 'Origin');
+  }
+
+  return payload;
+});
+
 // Registrar plugins
 async function registerPlugins() {
-  // Orden importante: primero cors, helmet, rate-limit
-  await app.register(corsPlugin);
+  // Orden importante: helmet, rate-limit (CORS ya se maneja con hooks globales)
   await app.register(helmetPlugin);
   await app.register(rateLimitPlugin);
   await app.register(sensiblePlugin);
@@ -47,7 +108,6 @@ async function registerPlugins() {
 // Registrar rutas
 async function registerRoutes() {
   // Rutas públicas
-  await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(planesRoutes, { prefix: '/api/planes' });
   await app.register(sesionesRoutes, { prefix: '/api/sesiones' });
   await app.register(pagosRoutes, { prefix: '/api/pagos' });

@@ -1,8 +1,10 @@
 import { MercadoPagoConfig, Preference, Payment } from 'mercadopago';
 
 const client = new MercadoPagoConfig({
-  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN as string,
-  options: { timeout: 5000 },
+  accessToken: process.env.MERCADOPAGO_ACCESS_TOKEN?.trim() as string,
+  options: {
+    timeout: 30000,
+  },
 });
 
 const preference = new Preference(client);
@@ -13,14 +15,18 @@ export interface PreferenceData {
   descripcion: string;
   monto: number;
   sesionId: string;
-  backUrl: string;
+  backUrl: string; 
 }
 
 export async function crearPreferencia(data: PreferenceData) {
   try {
-    const body = {
+    // En desarrollo, Mercado Pago no acepta localhost en back_urls con auto_return
+    const isDevelopment = process.env.NODE_ENV !== 'production';
+
+    const body: any = {
       items: [
         {
+          id: data.sesionId,
           title: data.titulo,
           description: data.descripcion,
           quantity: 1,
@@ -29,11 +35,10 @@ export async function crearPreferencia(data: PreferenceData) {
         },
       ],
       back_urls: {
-        success: `${data.backUrl}/success`,
-        failure: `${data.backUrl}/failure`,
-        pending: `${data.backUrl}/pending`,
+        success: `${data.backUrl}/pago/exito`,
+        failure: `${data.backUrl}/pago/error`,
+        pending: `${data.backUrl}/pago/pendiente`,
       },
-      auto_return: 'approved' as const,
       external_reference: data.sesionId,
       notification_url: `${process.env.BACKEND_URL}/pagos/webhook`,
       statement_descriptor: 'TAROTI',
@@ -42,6 +47,11 @@ export async function crearPreferencia(data: PreferenceData) {
         installments: 1,
       },
     };
+
+    // Solo agregar auto_return en producción (Mercado Pago no acepta localhost)
+    if (!isDevelopment) {
+      body.auto_return = 'approved';
+    }
 
     const response = await preference.create({ body });
 
@@ -67,14 +77,61 @@ export async function obtenerPago(paymentId: string) {
 }
 
 export function verificarWebhookSignature(xSignature: string, xRequestId: string, dataId: string): boolean {
-  // En producción deberías verificar la firma del webhook
-  // Para desarrollo, aceptamos todos los webhooks
-  if (process.env.NODE_ENV === 'development') {
-    return true;
+  try {
+    const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET;
+
+    if (!secret) {
+      console.warn('[WEBHOOK] No se encontró MERCADOPAGO_WEBHOOK_SECRET en .env');
+      // En desarrollo, permitir sin verificación
+      return process.env.NODE_ENV !== 'production';
+    }
+
+    // Separar el x-signature en parts
+    const parts = xSignature.split(',');
+
+    let ts: string | null = null;
+    let hash: string | null = null;
+
+    // Extraer ts y v1 del header
+    for (const part of parts) {
+      const [key, value] = part.split('=').map(s => s.trim());
+      if (key === 'ts') {
+        ts = value;
+      } else if (key === 'v1') {
+        hash = value;
+      }
+    }
+
+    if (!ts || !hash) {
+      console.warn('[WEBHOOK] No se encontró ts o hash en x-signature');
+      return false;
+    }
+
+    // Generar el manifest string según la documentación de MP
+    // Template: id:[data.id_url];request-id:[x-request-id_header];ts:[ts_header];
+    const manifest = `id:${dataId};request-id:${xRequestId};ts:${ts};`;
+
+    // Crear HMAC SHA256
+    const crypto = require('crypto');
+    const cyphedSignature = crypto
+      .createHmac('sha256', secret)
+      .update(manifest)
+      .digest('hex');
+
+    // Comparar las firmas
+    const isValid = cyphedSignature === hash;
+
+    if (!isValid) {
+      console.warn('[WEBHOOK] Firma inválida', {
+        expected: cyphedSignature,
+        received: hash,
+        manifest,
+      });
+    }
+
+    return isValid;
+  } catch (error) {
+    console.error('[WEBHOOK] Error verificando firma:', error);
+    return false;
   }
-
-  // TODO: Implementar verificación de firma en producción
-  // https://www.mercadopago.com.co/developers/es/docs/your-integrations/notifications/webhooks#editor_3
-
-  return true;
 }

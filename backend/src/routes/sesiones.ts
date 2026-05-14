@@ -43,26 +43,14 @@ export default async function (fastify: FastifyInstance) {
         });
       }
 
-      // Determinar tipo de usuario
-      let tipo_usuario: 'anonimo' | 'registrado' = 'anonimo';
-      let usuario_id: string | null = null;
+      // Todos los usuarios son anónimos ahora (sin autenticación)
+      const tipo_usuario = 'anonimo';
+      const usuario_id = null;
 
-      try {
-        await request.jwtVerify();
-        tipo_usuario = 'registrado';
-        usuario_id = (request.user as any).id;
-      } catch (error) {
-        // Usuario anónimo
-      }
+      // Precio único para todos (sin recargo)
+      const precio_calculado = plan.precio_base;
 
-      // Calcular precio
-      let precio_calculado = plan.precio_base;
-      if (tipo_usuario === 'anonimo') {
-        const recargo = Math.round((plan.precio_base * plan.recargo_anonimo_pct) / 100);
-        precio_calculado = plan.precio_base + recargo;
-      }
-
-      // Generar token de acceso para anónimos
+      // Generar token de acceso único para esta sesión
       const tokenAcceso = crypto.randomBytes(32).toString('hex');
       const tokenAccesoHasheado = await bcrypt.hash(tokenAcceso, 10);
 
@@ -151,6 +139,14 @@ export default async function (fastify: FastifyInstance) {
         }
       }
 
+      // IMPORTANTE: Marcar lectura como expirada inmediatamente después de ser vista
+      if (sesion.lectura && !sesion.lectura.expirada) {
+        await prisma.lectura.update({
+          where: { id: sesion.lectura.id },
+          data: { expirada: true },
+        });
+      }
+
       return reply.status(200).send({
         id: sesion.id,
         pregunta: sesion.pregunta,
@@ -168,7 +164,7 @@ export default async function (fastify: FastifyInstance) {
               id: sesion.lectura.id,
               ambito_detectado: sesion.lectura.ambito_detectado,
               interpretacion: sesion.lectura.interpretacion,
-              expirada: sesion.lectura.expirada,
+              expirada: true, // Siempre true ya que marcamos como expirada antes de devolver
               expira_en: sesion.lectura.expira_en,
             }
           : null,

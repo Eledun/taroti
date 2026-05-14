@@ -52,14 +52,9 @@ export async function agregarLecturaACola(sesionId: string): Promise<void> {
       // Generar lectura con OpenAI
       const lecturaGenerada = await generarLectura(sesion.pregunta, cartas, sesion.plan.tipo_tirada);
 
-      // Calcular fecha de expiración
-      let expiraEn: Date | null = null;
-      if (sesion.tipo_usuario === 'anonimo') {
-        // Anónimos: expira en 7 días
-        expiraEn = new Date();
-        expiraEn.setDate(expiraEn.getDate() + 7);
-      }
-      // Registrados: no expira (null)
+      // Todas las lecturas expiran inmediatamente después de ser vistas
+      // Se marcarán como expiradas en el frontend al mostrarlas
+      const expiraEn: Date | null = null;
 
       // Guardar lectura en BD
       await prisma.lectura.create({

@@ -74,7 +74,7 @@ model Sesion {
 model Pago {
   id                String    @id @default(uuid())
   sesion_id         String
-  mp_payment_id     String    @unique
+  mp_payment_id     String?   @unique
   mp_preference_id  String
   monto             Int       // Monto total en CLP
   precio_cobrado    Int       // Precio base al momento del cobro

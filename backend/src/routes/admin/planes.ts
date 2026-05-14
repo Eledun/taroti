@@ -10,7 +10,7 @@ export default async function (fastify: FastifyInstance) {
   fastify.get('/', async (request, reply) => {
     try {
       const planes = await prisma.plan.findMany({
-        orderBy: { creado_en: 'desc' },
+        orderBy: { actualizado_en: 'desc' },
       });
 
       return reply.status(200).send(planes);
