@@ -7,6 +7,7 @@
 
 # Documentación privada y credenciales
 devfiles/
+CREDENCIALES_PRODUCCION.md
 
 # Dependencias
 node_modules/
@@ -28,7 +29,7 @@ prisma/migrations/dev/
 Thumbs.db
 
 # IDE
-.vscode/
+.vscode/sftp.json
 .idea/
 
 # ngrok

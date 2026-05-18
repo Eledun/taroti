@@ -1,0 +1,48 @@
+{
+    "name": "Hostinger Producción",
+    "host": "ftp.tudominio.com",
+    "protocol": "sftp",
+    "port": 22,
+    "username": "u123456789",
+    "password": "",
+    "remotePath": "/home/u123456789/domains",
+    "uploadOnSave": false,
+    "useTempFile": false,
+    "openSsh": false,
+    "ignore": [
+        ".vscode",
+        ".git",
+        ".DS_Store",
+        "node_modules",
+        ".env",
+        ".env.local",
+        "*.log",
+        "logs/",
+        "dist/",
+        "build/",
+        ".svelte-kit/",
+        "CREDENCIALES_PRODUCCION.md",
+        "devfiles/",
+        "*.ngrok-authtoken",
+        "test-*.sh",
+        "/tmp",
+        "prisma/migrations/dev/"
+    ],
+    "watcher": {
+        "files": "**/*",
+        "autoUpload": false,
+        "autoDelete": false
+    },
+    "profiles": {
+        "backend": {
+            "name": "Backend API",
+            "remotePath": "/home/u123456789/domains/api.tudominio.com/nodejs/taroti-backend",
+            "context": "./backend"
+        },
+        "frontend": {
+            "name": "Frontend",
+            "remotePath": "/home/u123456789/domains/tudominio.com/public_html",
+            "context": "./frontend/build"
+        }
+    }
+}

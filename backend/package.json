@@ -7,10 +7,14 @@
     "dev": "nodemon src/index.ts",
     "build": "tsc && npx prisma generate",
     "start": "node dist/index.js",
+    "start:prod": "NODE_ENV=production node dist/index.js",
     "prisma:generate": "npx prisma generate",
     "prisma:migrate": "npx prisma migrate dev",
+    "prisma:migrate:deploy": "npx prisma migrate deploy",
     "prisma:studio": "npx prisma studio",
-    "prepare": "husky"
+    "prisma:seed": "npx tsx prisma/seed.ts",
+    "prepare": "husky",
+    "postinstall": "npx prisma generate"
   },
   "keywords": [],
   "author": "",

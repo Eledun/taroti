@@ -327,6 +327,55 @@ npm run preview      # Preview del build
 - [ ] Sistema de descuentos/cupones
 - [ ] Múltiples idiomas
 
+---
+
+## 🚀 Deploy a Producción (Hostinger)
+
+### Documentación Completa
+
+- **📖 [DEPLOY_HOSTINGER.md](./DEPLOY_HOSTINGER.md)** - Guía paso a paso completa (11 partes)
+- **⚡ [PRODUCCION.md](./PRODUCCION.md)** - Resumen rápido y checklist
+
+### Quick Start
+
+```bash
+# 1. Compilar backend
+cd backend
+./deploy-production.sh
+
+# 2. Compilar frontend
+cd ../frontend
+./deploy-production.sh
+
+# 3. Subir archivos a Hostinger vía FTP
+# 4. Configurar Node.js app en hPanel
+# 5. Aplicar migraciones en producción
+```
+
+### Archivos de Configuración
+
+- `backend/.htaccess` - Proxy Apache → Node.js
+- `backend/deploy-production.sh` - Script de build backend
+- `frontend/.htaccess` - SPA routing para SvelteKit
+- `frontend/deploy-production.sh` - Script de build frontend
+- `.env.example` - Templates de variables de entorno (actualizados)
+
+### Requisitos Hostinger
+
+- ✅ Plan Business (incluye Node.js + MySQL)
+- ✅ Dominio configurado
+- ✅ SSL activado (Let's Encrypt incluido)
+- ✅ Subdomain `api.tudominio.com` creado
+
+### Costos Estimados
+
+- Hostinger Business: ~$4-8 USD/mes
+- OpenAI API: ~$5-20 USD/mes (según uso)
+- Mercado Pago: 0% + comisión por transacción
+- **Total**: ~$10-30 USD/mes
+
+---
+
 ## Licencia
 
 Privado - Todos los derechos reservados

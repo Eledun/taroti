@@ -93,6 +93,15 @@ app.addHook('onSend', async (request, reply, payload) => {
   return payload;
 });
 
+// Hook para asegurar charset UTF-8 en todas las respuestas
+app.addHook('onSend', async (request, reply, payload) => {
+  const contentType = reply.getHeader('Content-Type');
+  if (contentType && typeof contentType === 'string' && contentType.includes('application/json')) {
+    reply.header('Content-Type', 'application/json; charset=utf-8');
+  }
+  return payload;
+});
+
 // Registrar plugins
 async function registerPlugins() {
   // Orden importante: helmet, rate-limit (CORS ya se maneja con hooks globales)

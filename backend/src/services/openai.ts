@@ -24,7 +24,7 @@ export async function generarLectura(
   const cartasFormateadas = cartas
     .map(
       (c, i) =>
-        `${i + 1}. ${c.nombre} (${c.arcano}) - ${c.orientacion}${c.posicion ? ` - Posición: ${c.posicion}` : ''}`
+        `${i + 1}. ${c.nombre} - ${c.orientacion === 'invertida' ? 'Invertida' : 'Derecha'}${c.posicion !== undefined ? ` - Posición: ${c.posicion + 1}` : ''}`
     )
     .join('\n');
 
@@ -46,15 +46,25 @@ IMPORTANTE:
 7. Proporciona insights accionables
 8. Responde en español de Chile
 
+FORMATO DE LA INTERPRETACIÓN EN MARKDOWN:
+- Usa títulos H2 (##) para cada carta con SOLO su nombre, ejemplo: "## El Loco", "## La Muerte", "## Los Enamorados"
+- NO incluyas "Carta 1:", "Carta 2:", códigos (carta_X) ni números de posición en los títulos H2
+- Solo el nombre puro de la carta: "## La Sacerdotisa", "## El Mundo", etc.
+- Después del título de cada carta, explica su significado en el contexto de la pregunta
+- Menciona en el texto si la carta está invertida y cómo afecta su significado
+- Puedes usar H3 (###) para subsecciones como "### Significado" o "### Consejo"
+- Usa negritas (**texto**) para enfatizar conceptos clave
+- Termina con una sección H2 "## Mensaje del Tarot" o "## Consejo Final" con insights accionables
+
 Responde ÚNICAMENTE en formato JSON con esta estructura:
 {
   "ambito_detectado": "ámbito principal de la consulta",
-  "interpretacion": "interpretación completa en formato markdown, con títulos, negritas y separación clara"
+  "interpretacion": "interpretación completa en formato markdown siguiendo el formato especificado"
 }`;
 
   try {
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4o',
+      model: 'gpt-4o-mini',
       messages: [
         {
           role: 'system',

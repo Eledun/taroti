@@ -1,0 +1,17 @@
+# Hostinger Node.js Application Configuration
+# Redirige todo el tráfico al servidor Node.js
+
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ http://localhost:4000/$1 [P,L]
+
+# CORS Headers
+Header set Access-Control-Allow-Origin "*"
+Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+Header set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+# Security Headers
+Header set X-Content-Type-Options "nosniff"
+Header set X-Frame-Options "DENY"
+Header set X-XSS-Protection "1; mode=block"

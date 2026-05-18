@@ -35,6 +35,7 @@
 </script>
 
 <svelte:head>
+	<meta charset="UTF-8" />
 	<link rel="icon" href={favicon} />
 	<title>Taroti - Lecturas de Tarot Personalizadas</title>
 	<meta name="description" content="Obtén lecturas de tarot personalizadas que revelan tu camino. Descubre respuestas profundas a tus preguntas más importantes." />
