@@ -1,0 +1,14 @@
+{
+  "name": "taroti",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "install": "cd frontend && npm install",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && node build/index.js",
+    "preview": "cd frontend && npm run preview"
+  },
+  "workspaces": [
+    "frontend"
+  ]
+}
