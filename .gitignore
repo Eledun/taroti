@@ -34,3 +34,7 @@ Thumbs.db
 
 # ngrok
 *.ngrok-authtoken
+
+# Archivos de deploy
+*.tar.gz
+*.zip

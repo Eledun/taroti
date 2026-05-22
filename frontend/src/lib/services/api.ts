@@ -1,7 +1,7 @@
-import { env } from '$env/dynamic/public';
 import type { Plan, Sesion, Lectura, PreferenciaPago, CartaTarot } from '$lib/types';
 
-const API_URL = env.PUBLIC_API_URL || 'http://localhost:4000/api';
+// Ahora usamos rutas internas de SvelteKit (server endpoints)
+const API_URL = '/api';
 
 class ApiError extends Error {
 	constructor(
@@ -16,7 +16,7 @@ class ApiError extends Error {
 
 async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
 	const url = `${API_URL}${endpoint}`;
-	console.log('[API] Fetching:', url, 'API_URL:', API_URL);
+	console.log('[API] Fetching:', url);
 
 	const response = await fetch(url, {
 		...options,
@@ -62,23 +62,52 @@ export async function obtenerSesion(sesionId: string, tokenAcceso?: string): Pro
 }
 
 // Pagos
-export async function crearPreferenciaPago(sesionId: string, tokenAcceso?: string): Promise<PreferenciaPago> {
+export interface IniciarPagoData {
+	sesion_id: string;
+	plan_nombre?: string;
+	precio?: number;
+	token_acceso?: string;
+}
+
+export async function crearPreferenciaPago(data: IniciarPagoData): Promise<PreferenciaPago> {
 	return fetchAPI<PreferenciaPago>('/pagos/preference', {
 		method: 'POST',
-		body: JSON.stringify({ sesion_id: sesionId, token_acceso: tokenAcceso })
+		body: JSON.stringify(data)
 	});
 }
 
-export async function iniciarPago(sesionId: string): Promise<PreferenciaPago> {
+export async function iniciarPago(sesionId: string, planNombre?: string, precio?: number): Promise<PreferenciaPago> {
 	return fetchAPI<PreferenciaPago>('/pagos/preference', {
 		method: 'POST',
-		body: JSON.stringify({ sesion_id: sesionId })
+		body: JSON.stringify({
+			sesion_id: sesionId,
+			plan_nombre: planNombre,
+			precio: precio
+		})
 	});
 }
 
 // Lecturas
-export async function obtenerLectura(sesionId: string, tokenAcceso?: string): Promise<Lectura> {
-	const params = tokenAcceso ? `?token_acceso=${tokenAcceso}` : '';
-	return fetchAPI<Lectura>(`/lecturas/${sesionId}${params}`);
+export interface ObtenerLecturaParams {
+	pregunta: string;
+	cartas: CartaTarot[];
+	tipo_tirada: string;
+	plan_nombre: string;
+	token_acceso?: string;
+}
+
+export async function obtenerLectura(sesionId: string, params: ObtenerLecturaParams): Promise<Lectura> {
+	const queryParams = new URLSearchParams({
+		pregunta: params.pregunta,
+		cartas: JSON.stringify(params.cartas),
+		tipo_tirada: params.tipo_tirada,
+		plan_nombre: params.plan_nombre
+	});
+
+	if (params.token_acceso) {
+		queryParams.set('token_acceso', params.token_acceso);
+	}
+
+	return fetchAPI<Lectura>(`/lecturas/${sesionId}?${queryParams.toString()}`);
 }
 

@@ -163,6 +163,7 @@
 	}
 
 	function compartirLectura() {
+		if (!lectura) return;
 		if (navigator.share) {
 			navigator.share({
 				title: 'Mi lectura de Tarot',
@@ -180,6 +181,16 @@
 	<title>Tu Lectura de Tarot - Taroti</title>
 </svelte:head>
 
+{#if !lectura}
+<div class="lectura-container">
+	<div class="container">
+		<div class="lectura-header fade-in">
+			<h1>Generando tu Lectura...</h1>
+			<p>El Tarot está revelando los mensajes para ti. Por favor espera un momento.</p>
+		</div>
+	</div>
+</div>
+{:else}
 <div class="lectura-container">
 	<div class="container">
 		<!-- Encabezado de la lectura -->
@@ -266,6 +277,7 @@
 		{/if}
 	</div>
 </div>
+{/if}
 
 <style>
 	.lectura-container {

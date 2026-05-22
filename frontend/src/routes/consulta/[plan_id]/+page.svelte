@@ -87,9 +87,20 @@
 
 			sesion = await crearSesion(sesionData);
 
-			// Iniciar el pago automáticamente después de crear la sesión
+			// Guardar sesión en sessionStorage para recuperarla después del pago
 			const sesionId = (sesion as any).sesion_id || sesion.id;
-			const pagoResponse = await iniciarPago(sesionId);
+			sessionStorage.setItem(`sesion_${sesionId}`, JSON.stringify({
+				id: sesionId,
+				pregunta,
+				cartas,
+				plan: {
+					nombre: plan.nombre,
+					tipo_tirada: plan.tipo_tirada
+				}
+			}));
+
+			// Iniciar el pago automáticamente después de crear la sesión
+			const pagoResponse = await iniciarPago(sesionId, plan.nombre, plan.precio_final);
 
 			if (pagoResponse.init_point) {
 				// Abrir Mercado Pago en una nueva ventana
@@ -113,7 +124,7 @@
 			errorPago = null;
 
 			const sesionId = (sesion as any).sesion_id || sesion.id;
-			const pagoResponse = await iniciarPago(sesionId);
+			const pagoResponse = await iniciarPago(sesionId, plan?.nombre, plan?.precio_final);
 
 			if (pagoResponse.init_point) {
 				window.location.href = pagoResponse.init_point;

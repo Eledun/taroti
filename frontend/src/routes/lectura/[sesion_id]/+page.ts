@@ -1,38 +1,45 @@
 import { error } from '@sveltejs/kit';
-import { obtenerSesion } from '$lib/services/api';
+import { obtenerLectura } from '$lib/services/api';
 import type { PageLoad } from './$types';
+import type { Lectura } from '$lib/types';
 
 export const load: PageLoad = async ({ params, url }) => {
 	const sesionId = params.sesion_id;
 	const tokenAcceso = url.searchParams.get('token_acceso');
 
-	try {
-		const sesion = await obtenerSesion(sesionId, tokenAcceso || undefined);
+	// Recuperar datos de sesión desde sessionStorage
+	if (typeof window === 'undefined') {
+		// Si estamos en SSR, simplemente retornar el sesionId
+		return { sesionId, lecturaGenerada: false, lectura: null };
+	}
 
-		if (!sesion.lectura) {
-			throw error(404, {
-				message: 'Lectura no encontrada'
-			});
-		}
-
-		// Transformar sesion a formato lectura
-		const lectura = {
-			id: sesion.lectura.id,
-			pregunta: sesion.pregunta,
-			cartas: sesion.cartas,
-			ambito_detectado: sesion.lectura.ambito_detectado,
-			interpretacion: sesion.lectura.interpretacion,
-			expirada: sesion.lectura.expirada,
-			expira_en: sesion.lectura.expira_en,
-			creado_en: sesion.creado_en,
-			plan: sesion.plan
-		};
-
-		return { lectura };
-	} catch (err) {
-		console.error('Error cargando lectura:', err);
+	const sesionDataRaw = sessionStorage.getItem(`sesion_${sesionId}`);
+	if (!sesionDataRaw) {
 		throw error(404, {
-			message: 'Lectura no encontrada'
+			message: 'Sesión no encontrada. Por favor, inicia una nueva consulta.'
+		});
+	}
+
+	const sesionData = JSON.parse(sesionDataRaw);
+
+	try {
+		// Llamar al endpoint de lecturas para generar la lectura con OpenAI
+		const lectura: Lectura = await obtenerLectura(sesionId, {
+			pregunta: sesionData.pregunta,
+			cartas: sesionData.cartas,
+			tipo_tirada: sesionData.plan.tipo_tirada,
+			plan_nombre: sesionData.plan.nombre,
+			token_acceso: tokenAcceso || undefined
+		});
+
+		return {
+			lecturaGenerada: true,
+			lectura
+		};
+	} catch (err) {
+		console.error('Error generando lectura:', err);
+		throw error(500, {
+			message: 'Error al generar la lectura. Por favor, intenta nuevamente.'
 		});
 	}
 };

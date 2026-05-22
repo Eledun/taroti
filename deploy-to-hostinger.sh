@@ -1,161 +1,115 @@
 #!/bin/bash
 
-# ================================================================
-# 🔮 TAROTI - SCRIPT DE DEPLOY A HOSTINGER
-# ================================================================
-#
-# Este script automatiza el despliegue completo a Hostinger usando LFTP
-#
-# Requisitos:
-#   - lftp instalado (brew install lftp en macOS)
-#
-# Uso:
-#   chmod +x deploy-to-hostinger.sh
-#   ./deploy-to-hostinger.sh
-#
-# ================================================================
+# 🚀 Script de Deploy - Taroti SvelteKit a Hostinger
+# Este script sube la aplicación compilada al servidor via FTP
 
-set -e  # Detener en caso de error
+set -e  # Salir si hay algún error
 
-# Colores para output
+# Colores
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
 RED='\033[0;31m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Configuración FTP
-FTP_HOST="46.202.145.196"
+# Credenciales de Hostinger
+FTP_HOST="taroti.fun"
 FTP_USER="u616221621"
-FTP_PORT="21"
+FTP_PASS="Taraoti_1"
 
-echo -e "${BLUE}"
-echo "════════════════════════════════════════════════════════════════"
-echo "           🔮 DEPLOY A HOSTINGER - TAROTI                       "
-echo "════════════════════════════════════════════════════════════════"
-echo -e "${NC}"
+# Directorios
+LOCAL_BUILD_DIR="./frontend/build"
+LOCAL_PACKAGE_JSON="./frontend/package.json"
+LOCAL_ENV_PRODUCTION="./frontend/.env.production"
+REMOTE_DIR="/domains/taroti.fun/public_html"
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}🔮 Taroti - Deploy a Hostinger${NC}"
+echo -e "${BLUE}========================================${NC}"
+echo ""
+
+# Verificar que existe el build
+if [ ! -d "$LOCAL_BUILD_DIR" ]; then
+    echo -e "${RED}❌ Error: No se encontró el directorio build${NC}"
+    echo -e "${YELLOW}💡 Ejecuta primero: cd frontend && npm run build${NC}"
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Build encontrado${NC}"
+echo ""
 
 # Verificar que lftp está instalado
 if ! command -v lftp &> /dev/null; then
-    echo -e "${RED}✗ Error: lftp no está instalado${NC}"
-    echo -e "${YELLOW}Instálalo con: brew install lftp${NC}"
+    echo -e "${RED}❌ Error: lftp no está instalado${NC}"
+    echo -e "${YELLOW}💡 Instala lftp: brew install lftp${NC}"
     exit 1
 fi
 
-# Pedir contraseña si no está en variable de entorno
-if [ -z "$FTP_PASSWORD" ]; then
-    echo -e "${YELLOW}Por favor, ingresa la contraseña de FTP:${NC}"
-    read -s FTP_PASSWORD
-    export FTP_PASSWORD
-    echo ""
-fi
-
-echo -e "${BLUE}📦 Paso 1: Compilando aplicaciones...${NC}"
-
-# Compilar Backend
-echo -e "   ${GREEN}→${NC} Compilando backend..."
-cd backend
-./deploy-production.sh > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo -e "   ${GREEN}✓${NC} Backend compilado"
-else
-    echo -e "   ${RED}✗${NC} Error compilando backend"
-    exit 1
-fi
-cd ..
-
-# Compilar Frontend
-echo -e "   ${GREEN}→${NC} Compilando frontend..."
-cd frontend
-npm run build > /dev/null 2>&1
-if [ $? -eq 0 ]; then
-    echo -e "   ${GREEN}✓${NC} Frontend compilado"
-else
-    echo -e "   ${RED}✗${NC} Error compilando frontend"
-    exit 1
-fi
-cd ..
-
+echo -e "${GREEN}✅ lftp instalado${NC}"
 echo ""
-echo -e "${BLUE}🚀 Paso 2: Subiendo Backend a Hostinger...${NC}"
 
-echo -e "   ${GREEN}→${NC} Subiendo carpeta dist..."
-lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<EOF
-set ftp:ssl-allow no
-set net:timeout 30
-set net:reconnect-interval-base 5
-set net:max-retries 3
-mkdir -p /public_html/api
-cd /public_html/api
-mirror -R --verbose=0 backend/dist dist
-mirror -R --verbose=0 backend/prisma prisma
-put backend/package.json
-put backend/package-lock.json
-put backend/.htaccess
+echo -e "${BLUE}📤 Subiendo archivos al servidor...${NC}"
+echo ""
+
+# Usar lftp para subir archivos
+lftp -e "
+set ssl:verify-certificate no;
+open -u ${FTP_USER},${FTP_PASS} ftp://${FTP_HOST};
+
+# Ir al directorio remoto
+cd ${REMOTE_DIR};
+
+# Limpiar contenido anterior (excepto archivos ocultos y específicos)
+echo '🧹 Limpiando directorio remoto...';
+rm -rf build;
+rm -f package.json;
+rm -f .env;
+
+# Crear directorio build si no existe
+mkdir -p build;
+
+# Subir todo el contenido de build/
+echo '📦 Subiendo build/...';
+mirror -R ${LOCAL_BUILD_DIR} build;
+
+# Subir package.json (solo con dependencias de producción)
+echo '📄 Subiendo package.json...';
+put ${LOCAL_PACKAGE_JSON} -o package.json;
+
+# Subir .env de producción
+echo '🔐 Subiendo .env de producción...';
+put ${LOCAL_ENV_PRODUCTION} -o .env;
+
+# Crear archivo de inicio
+echo '📝 Creando index.js...';
+
 bye
-EOF
+" << 'LFTP_SCRIPT'
 
-if [ $? -eq 0 ]; then
-    echo -e "   ${GREEN}✓${NC} Backend subido exitosamente"
-else
-    echo -e "   ${RED}✗${NC} Error subiendo backend"
-    exit 1
-fi
-
+# Mensaje de confirmación
 echo ""
-echo -e "${BLUE}🚀 Paso 3: Subiendo Frontend a Hostinger...${NC}"
-
-echo -e "   ${GREEN}→${NC} Subiendo archivos del frontend..."
-lftp -u "$FTP_USER","$FTP_PASSWORD" -p "$FTP_PORT" "$FTP_HOST" <<EOF
-set ftp:ssl-allow no
-set net:timeout 30
-set net:reconnect-interval-base 5
-set net:max-retries 3
-cd /public_html
-lcd frontend/build
-mput -O /public_html *
-mirror -R --verbose=0 _app /public_html/_app
-mirror -R --verbose=0 arcan_mayor /public_html/arcan_mayor
-put .htaccess 2>/dev/null || echo "No .htaccess found"
-bye
-EOF
-
-if [ $? -eq 0 ]; then
-    echo -e "   ${GREEN}✓${NC} Frontend subido exitosamente"
-else
-    echo -e "   ${RED}✗${NC} Error subiendo frontend"
-    exit 1
-fi
-
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}✅ Deploy completado exitosamente${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
-echo -e "${GREEN}"
-echo "════════════════════════════════════════════════════════════════"
-echo "                  ✅ DEPLOY COMPLETADO                          "
-echo "════════════════════════════════════════════════════════════════"
-echo -e "${NC}"
-
-echo -e "${YELLOW}📋 Próximos pasos en Hostinger:${NC}"
+echo -e "${YELLOW}📋 Próximos pasos:${NC}"
 echo ""
-echo "1. Conéctate por SSH al servidor:"
-echo "   ${GREEN}ssh $FTP_USER@$FTP_HOST${NC}"
+echo -e "1. ${BLUE}Conectarte por SSH al servidor:${NC}"
+echo -e "   ssh u616221621@taroti.fun"
 echo ""
-echo "2. Navega a la carpeta del backend:"
-echo "   ${GREEN}cd /home/$FTP_USER/public_html/api${NC}"
+echo -e "2. ${BLUE}Ir al directorio de la app:${NC}"
+echo -e "   cd /domains/taroti.fun/public_html"
 echo ""
-echo "3. Instala las dependencias:"
-echo "   ${GREEN}npm install --production${NC}"
-echo "   ${GREEN}npx prisma generate${NC}"
+echo -e "3. ${BLUE}Instalar dependencias:${NC}"
+echo -e "   npm install --production"
 echo ""
-echo "4. Aplica las migraciones de base de datos:"
-echo "   ${GREEN}npx prisma migrate deploy${NC}"
-echo "   ${GREEN}npx prisma db seed${NC}"
+echo -e "4. ${BLUE}Configurar Node.js App en hPanel:${NC}"
+echo -e "   - Application root: domains/taroti.fun/public_html"
+echo -e "   - Application startup file: build/index.js"
+echo -e "   - Node.js version: 22.x"
+echo -e "   - Application mode: Production"
 echo ""
-echo "5. Configura el archivo .env con las credenciales de producción"
+echo -e "5. ${BLUE}Iniciar la aplicación desde hPanel${NC}"
 echo ""
-echo "6. Inicia la aplicación Node.js desde el panel de Hostinger"
-echo "   (Avanzado → Node.js → Crear aplicación)"
-echo ""
-echo -e "${GREEN}🔮 ¡Tu aplicación Taroti está lista para funcionar!${NC}"
-echo ""
-echo -e "${BLUE}📚 Para más detalles, consulta: INSTRUCCIONES_DEPLOY.md${NC}"
+echo -e "${GREEN}🌐 Tu app estará disponible en: http://taroti.fun${NC}"
 echo ""
