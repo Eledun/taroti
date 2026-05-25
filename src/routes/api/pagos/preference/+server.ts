@@ -43,7 +43,7 @@ interface MercadoPagoPreference {
 		failure: string;
 		pending: string;
 	};
-	auto_return: string;
+	auto_return?: string;
 	external_reference: string;
 	payment_methods?: MercadoPagoPaymentMethods;
 }
@@ -78,8 +78,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			failure: `${FRONTEND_URL || 'http://localhost:5173'}/pago/error`,
 			pending: `${FRONTEND_URL || 'http://localhost:5173'}/pago/pendiente`
 		},
-		// auto_return removido para evitar CSP errors de Mercado Pago
-		// El usuario deberá hacer clic en "Volver al sitio" manualmente
+		auto_return: 'approved',
 		external_reference: sesion_id,
 		payment_methods: {
 			excluded_payment_methods: [],

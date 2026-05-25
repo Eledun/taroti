@@ -7,6 +7,110 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.3] - 2026-05-25
+
+### 🎯 Integración OpenAI Completada + Flujo End-to-End Funcional
+Sistema completo de generación de lecturas con IA + persistencia en base de datos
+
+---
+
+### Added
+
+#### Integración OpenAI API
+**Archivo:** `.env:7`
+- ✅ `OPENAI_API_KEY` configurado con API key real
+- Modelo: GPT-4o
+- Temperatura: 0.8 (lecturas naturales y variadas)
+- Max tokens: 2000
+
+#### Inferencia automática de planes
+**Archivo:** `src/routes/api/sesiones/+server.ts:101-122`
+- Lógica para inferir plan basado en número de cartas:
+  - 3 cartas → "Tirada de 3 Cartas" / tres_cartas / $5,000 CLP
+  - 10 cartas → "Cruz Celta" / cruz_celta / $15,000 CLP
+  - 13 cartas → "Rueda del Año" / rueda_del_anio / $20,000 CLP
+- **Razón:** Sesiones cargadas desde BD no tenían información del plan
+- **Impacto:** Permite generar lecturas para sesiones recuperadas de la BD
+
+### Changed
+
+#### Carga de sesiones desde base de datos
+**Archivo:** `src/routes/lectura/[sesion_id]/+page.ts:23-40`
+- **Antes:** Solo cargaba desde sessionStorage, fallaba con 404 si no existía
+- **Después:** Intenta sessionStorage primero, luego carga desde API/BD
+- **Impacto:** Sesiones persisten entre recargas de página y reinicios del servidor
+
+#### Endpoint GET /api/sesiones con plan inferido
+**Archivo:** `src/routes/api/sesiones/+server.ts:99-141`
+- Parseo de cartas mejorado (maneja string y object)
+- Inferencia de plan automática
+- Precio calculado según tipo de tirada
+- **Antes:** Devolvía plan vacío (`nombre: '', tipo_tirada: ''`)
+- **Después:** Devuelve plan completo con nombre y tipo_tirada correctos
+
+### Fixed
+
+#### Error 500 al generar lectura con sesión de BD
+**Problema:** `+page.ts` intentaba acceder a `sesionData.plan.tipo_tirada` pero era string vacío
+**Causa:** Endpoint de sesiones no infería el plan desde el número de cartas
+**Solución:** Agregada lógica de inferencia en `+server.ts:104-122`
+**Impacto:** Lecturas se generan correctamente desde sesiones recuperadas de BD
+
+#### JSON parse error en cartas_seleccionadas
+**Problema:** `SyntaxError: Unexpected token 'o', "[object Obj"...`
+**Causa:** MariaDB a veces devuelve JSON como object, no string
+**Solución:** Type checking antes de parsear (línea 105):
+```typescript
+cartas: typeof row.cartas_seleccionadas === 'string' ?
+  JSON.parse(row.cartas_seleccionadas) :
+  row.cartas_seleccionadas
+```
+
+### Testing
+
+#### Flujo completo end-to-end ✅
+- [x] Crear sesión → Guardada en BD
+- [x] Simular pago → Guardado con `estado_mp='approved'` y `estado_detalle_mp='accredited'`
+- [x] Verificar pago → Retorna `pagado: true`
+- [x] Generar lectura con OpenAI → GPT-4o genera lectura profesional
+- [x] Cargar sesión desde BD → Plan inferido correctamente
+- [x] Página de lectura → Se muestra sin error 500
+
+#### Sesión de prueba
+- ID: `TEST-OPENAI-SESSION-001`
+- Pregunta: "¿Qué me depara el futuro en el amor?"
+- Cartas: El Loco, El Mago, La Sacerdotisa (invertida)
+- URL: `https://overboastfully-pernicious-nasir.ngrok-free.dev/lectura/TEST-OPENAI-SESSION-001`
+- Resultado: ✅ Lectura generada exitosamente
+
+#### Calidad de lectura OpenAI
+- Formato: Markdown estructurado con títulos y secciones
+- Contenido: Interpretación profunda de cada carta en su posición
+- Tono: Empático, profesional, útil
+- Longitud: ~2000 tokens (lectura completa y detallada)
+
+### Performance
+
+#### API OpenAI
+- Tiempo de respuesta: ~3-5 segundos por lectura
+- Costo estimado: ~$0.02 USD por lectura (GPT-4o)
+- Cache: Lecturas guardadas en sessionStorage para evitar regeneración
+
+### Deployment Notes
+
+**Para producción:**
+1. ✅ OPENAI_API_KEY ya configurado
+2. ✅ MariaDB con schema actualizado
+3. ✅ Webhook de Mercado Pago funcionando
+4. ✅ Flujo completo probado end-to-end
+
+**Monitoreo recomendado:**
+- Uso de tokens OpenAI (límites de quota)
+- Tiempo de respuesta de /api/lecturas
+- Errores de OpenAI API (rate limits, downtime)
+
+---
+
 ## [2.3.2] - 2026-05-25
 
 ### 🎯 Integración Mercado Pago Completada

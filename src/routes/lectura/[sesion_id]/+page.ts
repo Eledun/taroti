@@ -3,37 +3,56 @@ import { obtenerLectura } from '$lib/services/api';
 import type { PageLoad } from './$types';
 import type { Lectura } from '$lib/types';
 
-export const load: PageLoad = async ({ params, url }) => {
+export const load: PageLoad = async ({ params, url, fetch }) => {
 	const sesionId = params.sesion_id;
 	const tokenAcceso = url.searchParams.get('token_acceso');
 
-	// Recuperar datos de sesión desde sessionStorage
-	if (typeof window === 'undefined') {
-		// Si estamos en SSR, simplemente retornar el sesionId
-		return { sesionId, lecturaGenerada: false, lectura: null };
+	// Recuperar datos de sesión desde sessionStorage O base de datos
+	let sesionData: any = null;
+
+	if (typeof window !== 'undefined') {
+		// En el navegador: intentar primero sessionStorage
+		const sesionDataRaw = sessionStorage.getItem(`sesion_${sesionId}`);
+		if (sesionDataRaw) {
+			sesionData = JSON.parse(sesionDataRaw);
+			console.log('[LECTURA] Sesión recuperada desde sessionStorage');
+		}
 	}
 
-	const sesionDataRaw = sessionStorage.getItem(`sesion_${sesionId}`);
-	if (!sesionDataRaw) {
-		throw error(404, {
-			message: 'Sesión no encontrada. Por favor, inicia una nueva consulta.'
-		});
+	// Si no hay datos en sessionStorage, cargar desde la API
+	if (!sesionData) {
+		console.log('[LECTURA] Cargando sesión desde base de datos');
+		try {
+			const sesionResponse = await fetch(`/api/sesiones?id=${sesionId}`);
+			if (!sesionResponse.ok) {
+				throw error(404, {
+					message: 'Sesión no encontrada. Por favor, inicia una nueva consulta.'
+				});
+			}
+			sesionData = await sesionResponse.json();
+			console.log('[LECTURA] Sesión recuperada desde BD');
+		} catch (err) {
+			console.error('[LECTURA] Error cargando sesión:', err);
+			throw error(404, {
+				message: 'Sesión no encontrada. Por favor, inicia una nueva consulta.'
+			});
+		}
 	}
-
-	const sesionData = JSON.parse(sesionDataRaw);
 
 	// Verificar si hay una lectura ya generada en sessionStorage
-	const lecturaGuardadaRaw = sessionStorage.getItem(`lectura_${sesionId}`);
-	if (lecturaGuardadaRaw) {
-		try {
-			const lecturaGuardada = JSON.parse(lecturaGuardadaRaw);
-			console.log('[LECTURA] Lectura ya existe en sessionStorage');
-			return {
-				lecturaGenerada: true,
-				lectura: lecturaGuardada
-			};
-		} catch {
-			// Si hay error parseando, continuar con el flujo normal
+	if (typeof window !== 'undefined') {
+		const lecturaGuardadaRaw = sessionStorage.getItem(`lectura_${sesionId}`);
+		if (lecturaGuardadaRaw) {
+			try {
+				const lecturaGuardada = JSON.parse(lecturaGuardadaRaw);
+				console.log('[LECTURA] Lectura ya existe en sessionStorage');
+				return {
+					lecturaGenerada: true,
+					lectura: lecturaGuardada
+				};
+			} catch {
+				// Si hay error parseando, continuar con el flujo normal
+			}
 		}
 	}
 
@@ -74,7 +93,9 @@ export const load: PageLoad = async ({ params, url }) => {
 		});
 
 		// Guardar lectura en sessionStorage para no regenerarla
-		sessionStorage.setItem(`lectura_${sesionId}`, JSON.stringify(lectura));
+		if (typeof window !== 'undefined') {
+			sessionStorage.setItem(`lectura_${sesionId}`, JSON.stringify(lectura));
+		}
 
 		return {
 			lecturaGenerada: true,

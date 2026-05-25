@@ -12,12 +12,12 @@ export const handle: Handle = async ({ event, resolve }) => {
 		"default-src 'self'",
 		// Permitir scripts de Mercado Pago y propios
 		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com https://www.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com",
-		// Permitir estilos de Mercado Pago
-		"style-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com",
+		// Permitir estilos de Mercado Pago y Google Fonts
+		"style-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com https://fonts.googleapis.com",
 		// Permitir imágenes de Mercado Pago
 		"img-src 'self' data: https: https://*.mlstatic.com https://*.mercadopago.com",
-		// Permitir fuentes de Mercado Pago
-		"font-src 'self' data: https://*.mlstatic.com https://*.mercadopago.com",
+		// Permitir fuentes de Mercado Pago y Google Fonts
+		"font-src 'self' data: https://*.mlstatic.com https://*.mercadopago.com https://fonts.gstatic.com",
 		// Permitir conexiones a Mercado Pago API
 		"connect-src 'self' https://api.mercadopago.com https://*.mercadopago.com https://sdk.mercadopago.com",
 		// Permitir iframes de Mercado Pago
