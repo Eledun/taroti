@@ -1,10 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { page } from '$app/stores';
+	import { goto } from '$app/navigation';
+	import { env } from '$env/dynamic/public';
 	import CardSelection from '$lib/components/CardSelection.svelte';
 	import { crearSesion, iniciarPago, obtenerPlanes } from '$lib/services/api';
 	import type { CartaTarot, Sesion, Plan } from '$lib/types';
 	import { isTransitioning } from '$lib/stores/transition';
+	import type { MercadoPago } from '$lib/types/mercadopago';
 
 	const planId = $derived($page.params.plan_id);
 
@@ -21,6 +24,8 @@
 	let sesion = $state<Sesion | null>(null);
 	let errorPago = $state<string | null>(null);
 	let procesandoPago = $state(false);
+	let mpInstance: MercadoPago | null = null;
+	let mostrandoCheckout = $state(false);
 
 	const precioFinal = $derived(plan?.precio_base || 0);
 
@@ -30,6 +35,14 @@
 
 		// Resetear el estado de transición con fade out suave
 		isTransitioning.set(false);
+
+		// Inicializar Mercado Pago SDK
+		const publicKey = env.PUBLIC_MERCADOPAGO_PUBLIC_KEY;
+		if (publicKey && typeof window !== 'undefined' && window.MercadoPago) {
+			mpInstance = new window.MercadoPago(publicKey, {
+				locale: 'es-CL'
+			});
+		}
 
 		try {
 			cargandoPlan = true;
@@ -78,6 +91,7 @@
 		try {
 			procesandoPago = true;
 			errorPago = null;
+			mostrandoCheckout = true;
 
 			const sesionData = {
 				plan_id: plan.id,
@@ -111,6 +125,7 @@
 		} catch (err) {
 			console.error('Error creando sesión o iniciando pago:', err);
 			errorPago = err instanceof Error ? err.message : 'Error al procesar el pago';
+			mostrandoCheckout = false;
 		} finally {
 			procesandoPago = false;
 		}
@@ -122,12 +137,14 @@
 		try {
 			procesandoPago = true;
 			errorPago = null;
+			mostrandoCheckout = true;
 
 			const sesionId = (sesion as any).sesion_id || sesion.id;
 			const pagoResponse = await iniciarPago(sesionId, plan?.nombre, plan?.precio_final);
 
 			if (pagoResponse.init_point) {
-				window.location.href = pagoResponse.init_point;
+				// Abrir Mercado Pago en una nueva ventana
+				window.open(pagoResponse.init_point, '_blank');
 			} else {
 				throw new Error('No se recibió el enlace de pago');
 			}
@@ -135,6 +152,7 @@
 			console.error('Error iniciando pago:', err);
 			errorPago = err instanceof Error ? err.message : 'Error al iniciar el pago';
 			procesandoPago = false;
+			mostrandoCheckout = false;
 		}
 	}
 

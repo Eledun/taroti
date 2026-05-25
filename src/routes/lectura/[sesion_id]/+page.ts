@@ -22,8 +22,49 @@ export const load: PageLoad = async ({ params, url }) => {
 
 	const sesionData = JSON.parse(sesionDataRaw);
 
+	// Verificar si hay una lectura ya generada en sessionStorage
+	const lecturaGuardadaRaw = sessionStorage.getItem(`lectura_${sesionId}`);
+	if (lecturaGuardadaRaw) {
+		try {
+			const lecturaGuardada = JSON.parse(lecturaGuardadaRaw);
+			console.log('[LECTURA] Lectura ya existe en sessionStorage');
+			return {
+				lecturaGenerada: true,
+				lectura: lecturaGuardada
+			};
+		} catch {
+			// Si hay error parseando, continuar con el flujo normal
+		}
+	}
+
 	try {
-		// Llamar al endpoint de lecturas para generar la lectura con OpenAI
+		// PASO 1: Verificar que el pago haya sido confirmado
+		const pagoResponse = await fetch(`/api/pagos/verificar/${sesionId}`);
+
+		if (!pagoResponse.ok) {
+			console.error('[LECTURA] Error verificando pago');
+			return {
+				lecturaGenerada: false,
+				lectura: null,
+				esperandoPago: true,
+				error: 'Error al verificar el pago'
+			};
+		}
+
+		const pagoData = await pagoResponse.json();
+
+		if (!pagoData.pagado) {
+			console.log('[LECTURA] Pago aún no confirmado, mostrando pantalla de espera');
+			return {
+				lecturaGenerada: false,
+				lectura: null,
+				esperandoPago: true
+			};
+		}
+
+		console.log('[LECTURA] Pago confirmado, generando lectura con OpenAI');
+
+		// PASO 2: Pago confirmado, generar lectura con OpenAI
 		const lectura: Lectura = await obtenerLectura(sesionId, {
 			pregunta: sesionData.pregunta,
 			cartas: sesionData.cartas,
@@ -31,6 +72,9 @@ export const load: PageLoad = async ({ params, url }) => {
 			plan_nombre: sesionData.plan.nombre,
 			token_acceso: tokenAcceso || undefined
 		});
+
+		// Guardar lectura en sessionStorage para no regenerarla
+		sessionStorage.setItem(`lectura_${sesionId}`, JSON.stringify(lectura));
 
 		return {
 			lecturaGenerada: true,

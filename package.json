@@ -1,12 +1,14 @@
 {
 	"name": "taroti",
 	"private": true,
-	"version": "1.0.0",
+	"version": "2.3.2",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
-		"build": "vite build",
-		"start": "node build/index.js",
+		"build": "vite build && npm run postbuild",
+		"postbuild": "cp start-server.js build/ && cp .env build/ 2>/dev/null || echo 'No .env to copy'",
+		"start": "node start-server.js",
+		"start:default": "node build/index.js",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
@@ -16,7 +18,10 @@
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/kit": "^2.50.2",
 		"dompurify": "^3.4.3",
+		"dotenv": "^17.4.2",
+		"express": "^5.2.1",
 		"gsap": "^3.14.2",
+		"mariadb": "^3.5.2",
 		"marked": "^18.0.3",
 		"svelte": "^5.54.0"
 	},

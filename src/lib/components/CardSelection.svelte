@@ -49,9 +49,20 @@
 	let cartasDisponibles = $state<number[]>([]);
 	let animatingCards = $state<Set<number>>(new Set());
 
-	// Inicializar cartas disponibles (solo los 22 Arcanos Mayores)
+	// Función para barajar array (Fisher-Yates shuffle)
+	function barajarArray<T>(array: T[]): T[] {
+		const shuffled = [...array];
+		for (let i = shuffled.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+		}
+		return shuffled;
+	}
+
+	// Inicializar cartas disponibles (solo los 22 Arcanos Mayores) - BARAJADAS
 	$effect(() => {
-		cartasDisponibles = Array.from({ length: TOTAL_CARTAS }, (_, i) => i);
+		const cartasEnOrden = Array.from({ length: TOTAL_CARTAS }, (_, i) => i);
+		cartasDisponibles = barajarArray(cartasEnOrden);
 	});
 
 	const puedeSeleccionar = $derived(cartasSeleccionadas.length < numCartas);
@@ -549,9 +560,9 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: var(--spacing-md);
+		padding: var(--spacing-lg);
 		position: relative;
-		overflow: hidden;
+		overflow: visible;
 		height: 100%;
 	}
 
@@ -600,6 +611,8 @@
 		backdrop-filter: blur(4px);
 		text-align: center;
 		line-height: 1.3;
+		pointer-events: none;
+		margin-top: var(--spacing-xs);
 	}
 
 	/* Padding adicional para las cartas del staff vertical (posiciones 7-10) solo en Cruz Celta */
@@ -607,7 +620,7 @@
 	.celtic-position[data-position="7"],
 	.celtic-position[data-position="8"],
 	.celtic-position[data-position="9"] {
-		padding-bottom: 10px;
+		padding-bottom: 0px;
 	}
 
 	/* Spread Layout - Floating Cards Pattern */
@@ -808,8 +821,8 @@
 
 	.wheel-diagram {
 		position: relative;
-		width: 100%;
-		height: 100%;
+		width: 600px;
+		height: 600px;
 	}
 
 	.wheel-position {
@@ -818,7 +831,7 @@
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: var(--spacing-xs);
+		gap: 4px;
 	}
 
 	.wheel-position :global(.tarot-card) {
@@ -847,6 +860,8 @@
 		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 		backdrop-filter: blur(4px);
 		text-align: center;
+		pointer-events: none;
+		margin-top: 0;
 	}
 
 	/* Posiciones circulares como reloj - Círculo perfecto */
@@ -856,92 +871,92 @@
 
 	/* Enero - posición 0 - 180° (6 en punto, abajo) */
 	.wheel-position[data-position="0"] {
-		left: 50%;
-		top: calc(50% + 38%);
+		left: 300px;
+		top: 500px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Febrero - posición 1 - 210° */
 	.wheel-position[data-position="1"] {
-		left: calc(50% - 38% * 0.5);
-		top: calc(50% + 38% * 0.866);
+		left: 200px;
+		top: 473px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Marzo - posición 2 - 240° */
 	.wheel-position[data-position="2"] {
-		left: calc(50% - 38% * 0.866);
-		top: calc(50% + 38% * 0.5);
+		left: 127px;
+		top: 400px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Abril - posición 3 - 270° (9 en punto, izquierda) */
 	.wheel-position[data-position="3"] {
-		left: calc(50% - 38%);
-		top: 50%;
+		left: 100px;
+		top: 300px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Mayo - posición 4 - 300° */
 	.wheel-position[data-position="4"] {
-		left: calc(50% - 38% * 0.866);
-		top: calc(50% - 38% * 0.5);
+		left: 127px;
+		top: 200px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Junio - posición 5 - 330° */
 	.wheel-position[data-position="5"] {
-		left: calc(50% - 38% * 0.5);
-		top: calc(50% - 38% * 0.866);
+		left: 200px;
+		top: 127px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Julio - posición 6 - 0° (12 en punto, arriba) */
 	.wheel-position[data-position="6"] {
-		left: 50%;
-		top: calc(50% - 38%);
+		left: 300px;
+		top: 100px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Agosto - posición 7 - 30° */
 	.wheel-position[data-position="7"] {
-		left: calc(50% + 38% * 0.5);
-		top: calc(50% - 38% * 0.866);
+		left: 400px;
+		top: 127px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Septiembre - posición 8 - 60° */
 	.wheel-position[data-position="8"] {
-		left: calc(50% + 38% * 0.866);
-		top: calc(50% - 38% * 0.5);
+		left: 473px;
+		top: 200px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Octubre - posición 9 - 90° (3 en punto, derecha) */
 	.wheel-position[data-position="9"] {
-		left: calc(50% + 38%);
-		top: 50%;
+		left: 500px;
+		top: 300px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Noviembre - posición 10 - 120° */
 	.wheel-position[data-position="10"] {
-		left: calc(50% + 38% * 0.866);
-		top: calc(50% + 38% * 0.5);
+		left: 473px;
+		top: 400px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* Diciembre - posición 11 - 150° */
 	.wheel-position[data-position="11"] {
-		left: calc(50% + 38% * 0.5);
-		top: calc(50% + 38% * 0.866);
+		left: 400px;
+		top: 473px;
 		transform: translate(-50%, -50%);
 	}
 
 	/* El Año - Centro */
 	.wheel-position[data-position="12"] {
-		left: 50%;
-		top: 50%;
+		left: 300px;
+		top: 300px;
 		transform: translate(-50%, -50%);
 		z-index: 10; /* Menor que z-index de animación (9999) */
 	}

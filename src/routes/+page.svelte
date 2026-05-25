@@ -467,9 +467,16 @@
 		height: 100%;
 		backface-visibility: hidden;
 		border-radius: 1.5rem;
-		padding: clamp(2rem, 5vw, 2.5rem);
 		backdrop-filter: blur(10px);
 		overflow: hidden;
+	}
+
+	.plan-card-front {
+		padding: clamp(2rem, 5vw, 2.5rem);
+	}
+
+	.plan-card-back {
+		padding: clamp(1.5rem, 4vw, 2rem);
 	}
 
 	/* Textura de fondo sutil */
@@ -533,17 +540,18 @@
 
 	.plan-description {
 		text-align: center;
-		padding: var(--spacing-lg);
+		padding: var(--spacing-md) var(--spacing-lg);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		flex: 1;
+		overflow-y: auto;
 	}
 
 	.plan-description p {
 		font-family: var(--font-mystical);
-		font-size: clamp(1.25rem, 3vw, 1.5rem);
-		line-height: 1.9;
+		font-size: clamp(1.1rem, 2.5vw, 1.3rem);
+		line-height: 1.7;
 		color: var(--color-cream);
 		font-style: italic;
 		font-weight: 400;
@@ -938,11 +946,13 @@
 	.plan-button-front,
 	.plan-button-back {
 		margin-top: auto;
-		padding-top: var(--spacing-md);
+		padding-top: var(--spacing-sm);
+		flex-shrink: 0;
 	}
 
 	.plan-button-back {
 		width: 100%;
+		padding-top: var(--spacing-md);
 	}
 
 	.btn-seleccionar:active {

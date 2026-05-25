@@ -66,6 +66,7 @@ export interface IniciarPagoData {
 	sesion_id: string;
 	plan_nombre?: string;
 	precio?: number;
+	email?: string;
 	token_acceso?: string;
 }
 
@@ -76,13 +77,14 @@ export async function crearPreferenciaPago(data: IniciarPagoData): Promise<Prefe
 	});
 }
 
-export async function iniciarPago(sesionId: string, planNombre?: string, precio?: number): Promise<PreferenciaPago> {
+export async function iniciarPago(sesionId: string, planNombre?: string, precio?: number, email?: string): Promise<PreferenciaPago> {
 	return fetchAPI<PreferenciaPago>('/pagos/preference', {
 		method: 'POST',
 		body: JSON.stringify({
 			sesion_id: sesionId,
 			plan_nombre: planNombre,
-			precio: precio
+			precio: precio,
+			email: email
 		})
 	});
 }

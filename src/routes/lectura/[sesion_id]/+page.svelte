@@ -3,12 +3,41 @@
 	import { formatearFecha } from '$lib/utils';
 	import { marked } from 'marked';
 	import { browser } from '$app/environment';
+	import { onMount } from 'svelte';
+	import { invalidate } from '$app/navigation';
 
 	let { data }: { data: PageData } = $props();
 	const lectura = $derived(data.lectura);
+	const esperandoPago = $derived(data.esperandoPago);
 
 	// Estado para mostrar/ocultar el consejo final
 	let mostrarConsejo = $state(false);
+
+	// Polling para verificar pago
+	let intentosPolling = $state(0);
+	const MAX_INTENTOS = 60; // 60 intentos x 2 segundos = 2 minutos
+
+	onMount(() => {
+		// Si estamos esperando el pago, iniciar polling
+		if (esperandoPago && browser) {
+			const interval = setInterval(async () => {
+				intentosPolling++;
+
+				if (intentosPolling >= MAX_INTENTOS) {
+					clearInterval(interval);
+					console.log('[POLLING] Tiempo de espera agotado');
+					return;
+				}
+
+				console.log(`[POLLING] Verificando pago (intento ${intentosPolling}/${MAX_INTENTOS})`);
+
+				// Recargar los datos de la página
+				await invalidate('app:lectura');
+			}, 2000); // Cada 2 segundos
+
+			return () => clearInterval(interval);
+		}
+	});
 
 	// Determinar layout de cartas según cantidad
 	const layoutCartas = $derived(() => {
@@ -181,12 +210,25 @@
 	<title>Tu Lectura de Tarot - Taroti</title>
 </svelte:head>
 
-{#if !lectura}
+{#if esperandoPago}
+<div class="lectura-container">
+	<div class="container">
+		<div class="lectura-header fade-in">
+			<h1>Esperando Confirmación de Pago...</h1>
+			<p>Tu pago está siendo procesado por Mercado Pago.</p>
+			<p>Una vez confirmado, tu lectura se generará automáticamente.</p>
+			<div class="spinner"></div>
+			<p class="texto-pequeno">Verificando pago... (intento {intentosPolling} de {MAX_INTENTOS})</p>
+		</div>
+	</div>
+</div>
+{:else if !lectura}
 <div class="lectura-container">
 	<div class="container">
 		<div class="lectura-header fade-in">
 			<h1>Generando tu Lectura...</h1>
 			<p>El Tarot está revelando los mensajes para ti. Por favor espera un momento.</p>
+			<div class="spinner"></div>
 		</div>
 	</div>
 </div>
@@ -1600,5 +1642,27 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
+	}
+
+	/* Spinner de carga */
+	.spinner {
+		margin: 2rem auto;
+		width: 50px;
+		height: 50px;
+		border: 4px solid rgba(245, 158, 11, 0.2);
+		border-top: 4px solid var(--color-primary);
+		border-radius: 50%;
+		animation: spin 1s linear infinite;
+	}
+
+	@keyframes spin {
+		0% { transform: rotate(0deg); }
+		100% { transform: rotate(360deg); }
+	}
+
+	.texto-pequeno {
+		font-size: 0.875rem;
+		color: var(--color-text-light);
+		margin-top: 1rem;
 	}
 </style>

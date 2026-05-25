@@ -1,313 +1,257 @@
-# 🔮 Taroti
+# 🔮 Taroti LATAM
 
-Plataforma web de lecturas de tarot personalizadas.
+Plataforma de lecturas de tarot personalizadas con IA para mercado LATAM.
 
-## Descripción
-
-Taroti es una aplicación web que ofrece lecturas de tarot personalizadas. Los usuarios pueden elegir entre tres tipos de tiradas, realizar su consulta, pagar de forma segura con Mercado Pago y recibir una interpretación detallada generada con IA.
-
-## Características principales
-
-- **Tres tipos de tirada**: Tres Cartas, Cruz Celta y Rueda del Año
-- **Lecturas personalizadas**: Interpretaciones profundas y detalladas generadas con OpenAI GPT-4o
-- **Modalidad anónima**: Sin necesidad de registro, pago directo
-- **Pagos seguros**: Integración con Mercado Pago (Chile)
-- **Arquitectura simplificada**: Todo en una aplicación SvelteKit, sin base de datos
-- **Sesiones temporales**: Datos almacenados en sessionStorage del navegador
-
-## Stack tecnológico
-
-### Aplicación
-- **Framework**: SvelteKit 5 con adapter-node
-- **Runtime**: Node.js 22
-- **Tipografía**: Cinzel (Google Fonts)
-- **Deployment**: Node.js server (SSR + API endpoints)
-
-### Integraciones
-- **Pagos**: Mercado Pago API REST
-- **IA**: OpenAI GPT-4o para generación de lecturas
-- **Hosting**: Hostinger Business con Node.js
-
-## Arquitectura
-
-Esta aplicación utiliza una **arquitectura simplificada** con SvelteKit:
-
-- **Sin base de datos**: Los planes están hardcodeados en el código
-- **Sin backend separado**: API endpoints integrados en SvelteKit (+server.ts)
-- **Sesiones temporales**: Uso de sessionStorage para datos de consulta
-- **Stateless**: Cada lectura es independiente
-
-## Estructura del proyecto
-
-```
-taroti/
-├── frontend/                    # Aplicación SvelteKit completa
-│   ├── src/
-│   │   ├── lib/
-│   │   │   ├── components/      # Componentes UI
-│   │   │   ├── data/
-│   │   │   │   ├── arcanos-mayores.ts
-│   │   │   │   └── planes.ts    # Planes hardcodeados
-│   │   │   ├── services/
-│   │   │   │   └── api.ts       # Cliente API interno
-│   │   │   └── types/           # TypeScript types
-│   │   ├── routes/
-│   │   │   ├── api/             # Server endpoints
-│   │   │   │   ├── planes/+server.ts
-│   │   │   │   ├── sesiones/+server.ts
-│   │   │   │   ├── pagos/+server.ts
-│   │   │   │   └── lecturas/+server.ts
-│   │   │   └── [páginas .svelte]
-│   │   └── app.css
-│   ├── static/                  # Imágenes y audios
-│   ├── build/                   # Output de producción
-│   ├── .env                     # Variables de entorno
-│   └── package.json
-├── deploy-sveltekit.sh          # Script de deploy
-├── README.md
-└── ARQUITECTURA_SIMPLIFICADA.md
-```
-
-## Inicio Rápido
-
-### Desarrollo Local
-
-1. **Instalar dependencias:**
-   ```bash
-   cd frontend
-   npm install
-   ```
-
-2. **Configurar variables de entorno:**
-
-   Crea un archivo `frontend/.env` basado en `.env.example`:
-   ```bash
-   # Mercado Pago (usa credenciales de TEST)
-   MERCADOPAGO_ACCESS_TOKEN=TEST-...
-   PUBLIC_MERCADOPAGO_PUBLIC_KEY=TEST-...
-   MERCADOPAGO_WEBHOOK_SECRET=...
-
-   # OpenAI
-   OPENAI_API_KEY=sk-proj-...
-
-   # URL del frontend (para redirects)
-   FRONTEND_URL=http://localhost:5173
-   ```
-
-3. **Iniciar el servidor de desarrollo:**
-   ```bash
-   npm run dev
-   ```
-
-   La aplicación estará disponible en `http://localhost:5173`
-
-### Build de Producción
-
-```bash
-cd frontend
-npm run build
-```
-
-Esto genera el build en `frontend/build/` listo para desplegar.
-
-## Configuración de Mercado Pago
-
-### 1. Crear aplicación
-
-1. Ve a: https://www.mercadopago.cl/developers/panel/app
-2. Crea una nueva aplicación
-3. Obtén tus credenciales (Access Token y Public Key)
-
-### 2. Configurar Webhooks
-
-Los webhooks son esenciales para recibir notificaciones de pagos en tiempo real.
-
-#### En desarrollo (con ngrok):
-
-1. **Instalar y ejecutar ngrok:**
-   ```bash
-   brew install ngrok
-   ngrok http 5173
-   ```
-
-2. **Configurar en Mercado Pago:**
-   - Ve a: https://www.mercadopago.cl/developers/panel/app
-   - Click en **Webhooks > Configurar notificaciones**
-   - Pestaña: **Modo de pruebas**
-   - URL: `https://tu-url-ngrok.ngrok.io/api/pagos/webhook`
-   - Evento: **Pagos** ✓
-   - Guardar y copiar la **clave secreta**
-
-3. **Actualizar .env:**
-   ```bash
-   MERCADOPAGO_WEBHOOK_SECRET=clave_secreta_copiada
-   FRONTEND_URL=https://tu-url-ngrok.ngrok.io
-   ```
-
-4. **Reiniciar el servidor de desarrollo**
-
-#### En producción:
-
-1. Usa tu dominio público: `https://taroti.fun/api/pagos/webhook`
-2. Configura en la pestaña **Modo productivo**
-3. Usa las credenciales de producción en `.env`
-
-### 3. Probar pagos
-
-#### Tarjetas de prueba para Chile (CLP):
-
-**Mastercard - Pago Aprobado:**
-```
-Número: 5474 9254 3267 0366
-CVV: 123
-Fecha: 11/25 (cualquier fecha futura)
-Titular: APRO
-```
-
-**Visa - Pago Aprobado:**
-```
-Número: 4509 9535 6623 3704
-CVV: 123
-Fecha: 11/25
-Titular: APRO
-```
-
-Más tarjetas: https://www.mercadopago.com.ar/developers/es/docs/your-integrations/test/cards
-
-### 4. Verificar webhook
-
-Después de un pago, revisa los logs del backend:
-```bash
-# Deberías ver:
-[INFO] Webhook recibido
-[INFO] Firma del webhook verificada correctamente
-[INFO] Pago procesado exitosamente
-```
-
-## Flujo de la aplicación
-
-1. **Usuario elige un plan** → Selecciona tipo de tirada (3 cartas, Cruz Celta, Rueda del Año)
-2. **Formulario de consulta** → Ingresa pregunta y contexto
-3. **Selección de cartas** → Elige N cartas del mazo de Arcanos Mayores
-4. **Creación de sesión** → API `/api/sesiones` genera sesión con token único
-5. **Guardado en sessionStorage** → Datos temporales en el navegador
-6. **Pago con Mercado Pago** → Redirige a checkout de MP
-7. **Webhook de confirmación** → MP notifica a `/api/pagos/webhook`
-8. **Generación de lectura** → OpenAI GPT-4o crea interpretación personalizada
-9. **Lectura disponible** → Usuario ve su lectura en `/lectura/[sesion_id]`
-
-## Seguridad
-
-- **Tokens de acceso únicos**: Cada sesión anónima tiene un token UUID de un solo uso
-- **Verificación de firma HMAC SHA256**: Valida webhooks de Mercado Pago
-- **CORS configurado**: Headers de seguridad en SvelteKit
-- **Sesiones temporales**: No se persiste información personal
-- **Stateless**: Sin base de datos, sin historial
-
-## Scripts útiles
-
-```bash
-cd frontend
-npm run dev          # Servidor de desarrollo (puerto 5173)
-npm run build        # Build para producción
-npm run preview      # Preview del build
-npm run check        # Verificar TypeScript
-```
-
-## Troubleshooting
-
-### El webhook no se recibe
-
-1. Verifica que ngrok esté corriendo (en desarrollo)
-2. Confirma que la URL en Mercado Pago sea correcta
-3. Revisa las DevTools del navegador (Network tab)
-4. Usa el simulador de webhooks en el Panel de MP
-
-### Error "Una de las partes es de prueba"
-
-- Usa tarjetas de prueba (ver sección anterior)
-- En modo test, NO uses tu cuenta personal de Mercado Pago
-- Paga como invitado con tarjetas de prueba
-
-### La lectura no se genera
-
-1. Verifica que tu API key de OpenAI tenga créditos
-2. Revisa la consola del servidor de desarrollo
-3. Confirma que el webhook de Mercado Pago se recibió correctamente
-4. Verifica que sessionStorage tiene los datos de la sesión
-
-### Error en sessionStorage
-
-- Asegúrate de que el navegador permite sessionStorage
-- Verifica que estás usando el mismo navegador/pestaña
-- No uses modo incógnito (puede limpiar sessionStorage antes)
-
-## Estado del proyecto
-
-**Última actualización:** Mayo 2026
-**Estado:** En desarrollo
-**Versión:** 2.0.0 (Arquitectura simplificada)
-
-### Cambios recientes (v2.0.0)
-
-- ✅ **Migración a arquitectura simplificada**: Eliminado backend separado
-- ✅ **SvelteKit unificado**: Todo en una sola aplicación con adapter-node
-- ✅ **Sin base de datos**: Planes hardcodeados, sesiones en sessionStorage
-- ✅ **API endpoints integrados**: Server routes en SvelteKit (+server.ts)
-- ✅ **Limpieza completa**: Eliminados 15+ archivos obsoletos y backend antiguo
-
-### Roadmap
-
-- [ ] Deploy a Hostinger con nueva arquitectura
-- [ ] Exportar lectura a PDF
-- [ ] Sistema de descuentos/cupones
-- [ ] Múltiples idiomas
-- [ ] Panel de estadísticas (opcional, sin base de datos)
+**Versión:** 2.3.0
+**Stack:** SvelteKit + MariaDB + Mercado Pago + OpenAI
 
 ---
 
-## 🚀 Deploy a Producción (Hostinger)
+## 🎯 Características
 
-### Quick Start
+- **3 tipos de tirada:** Tres Cartas (1000 CLP), Cruz Celta (3000 CLP), Año (5000 CLP)
+- **IA personalizada:** Interpretaciones con OpenAI GPT-4o-mini
+- **Pagos seguros:** Mercado Pago Checkout Pro
+- **Persistencia:** MariaDB (v2.3.0+)
+- **Auditoría completa:** Webhooks + logs de pagos
+
+---
+
+## 🔧 Stack Técnico
+
+```
+SvelteKit 2.50.2 (SSR + Node.js)
+├── Database: MariaDB (driver oficial v3.5.2)
+│   ├── Performance: 5,650 ops/seg
+│   └── Pool: 10 conexiones
+├── Pagos: Mercado Pago API REST
+│   ├── Checkout Pro (iframe)
+│   └── Webhook HMAC-SHA256
+├── IA: OpenAI GPT-4o-mini
+└── Deploy: Hostinger Business (Node.js)
+```
+
+---
+
+## 🚀 Setup Rápido
+
+### Requisitos
+
+- Node.js 18+
+- MariaDB 10.5+
+- npm 9+
+
+### Instalación
 
 ```bash
-# 1. Build de producción
-cd frontend
+# 1. Setup base de datos
+bash db/setup-local.sh
+
+# 2. Configurar variables de entorno
+cp .env.example .env
+nano .env  # Completar credenciales
+
+# 3. Instalar dependencias
+npm install
+
+# 4. Ejecutar desarrollo
+npm run dev
+
+# 5. Verificar
+curl http://localhost:5173/api/pagos/verificar/test-123
+```
+
+---
+
+## 📁 Estructura
+
+```
+taroti-latam/
+├── src/
+│   ├── lib/
+│   │   ├── db.js                    # Pool MariaDB
+│   │   ├── components/              # UI Svelte
+│   │   └── data/
+│   │       ├── arcanos-mayores.ts
+│   │       └── planes.ts
+│   └── routes/
+│       ├── api/
+│       │   └── pagos/
+│       │       ├── preference/+server.ts    # Crear pago MP
+│       │       ├── webhook/+server.ts       # Notificaciones MP
+│       │       └── verificar/[id]/+server.ts # Verificar pago
+│       ├── lectura/[sesion_id]/+page.svelte
+│       └── +page.svelte
+├── db/
+│   ├── schema-latam.sql             # 4 tablas
+│   └── setup-local.sh               # Setup automático
+├── CHANGELOG.md                     # Historial cambios
+├── TESTING-v2.3.0.md               # Guía testing
+└── README.md                        # Este archivo
+```
+
+---
+
+## 💾 Base de Datos
+
+### Schema
+
+**4 tablas principales:**
+1. `pagos` - Transacciones Mercado Pago
+2. `lecturas` - Lecturas generadas (IA)
+3. `webhook_events_mp` - Auditoría webhooks
+4. `audit_log` - Log general del sistema
+
+### Queries Útiles
+
+```bash
+# Ver últimos pagos
+mysql -u taroti_user -p taroti_latam -e "
+  SELECT sesion_id, estado_mp, fecha_pago
+  FROM pagos ORDER BY fecha_creacion DESC LIMIT 10;"
+
+# Pagos aprobados hoy
+mysql -u taroti_user -p taroti_latam -e "
+  SELECT COUNT(*) as total FROM pagos
+  WHERE estado_mp='approved' AND DATE(fecha_pago)=CURDATE();"
+```
+
+---
+
+## 🔐 Variables de Entorno
+
+```bash
+# Mercado Pago
+MERCADOPAGO_ACCESS_TOKEN=APP_USR-xxx
+PUBLIC_MERCADOPAGO_PUBLIC_KEY=APP_USR-xxx
+MERCADOPAGO_WEBHOOK_SECRET=xxx
+
+# OpenAI
+OPENAI_API_KEY=sk-proj-xxx
+
+# MariaDB
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=taroti_user
+DB_PASSWORD=xxx
+DB_NAME=taroti_latam
+
+# URLs
+FRONTEND_URL=http://taroti.fun
+PORT=3000
+HOST=0.0.0.0
+```
+
+---
+
+## 🧪 Testing
+
+Ver guía completa: [TESTING-v2.3.0.md](TESTING-v2.3.0.md)
+
+**Test básico:**
+```bash
+npm run dev
+curl http://localhost:5173/api/pagos/verificar/test-123 | jq .
+# Debe retornar: {"pagado":false}
+```
+
+---
+
+## 📦 Deploy
+
+```bash
+# Build
 npm run build
 
-# 2. Subir a Hostinger con script automatizado
-cd ..
-./deploy-sveltekit.sh
+# Crear ZIP
+cd build && zip -r ../taroti-v2.3.0-LATAM.zip .
 
-# 3. Configurar .env en el servidor
-# 4. Instalar dependencias en producción
-# 5. Configurar Node.js app en hPanel
+# Deploy Hostinger:
+# 1. Crear BD en phpMyAdmin (utf8mb4)
+# 2. Importar: db/schema-latam.sql
+# 3. Upload ZIP → Entry point: start-server.js
+# 4. Configurar variables entorno
+# 5. Configurar webhook MP: https://taroti.fun/api/pagos/webhook
+# 6. Restart app
 ```
 
-Ver documentación completa en:
-- **[ARQUITECTURA_SIMPLIFICADA.md](./ARQUITECTURA_SIMPLIFICADA.md)** - Arquitectura actual
-- **[ESTADO_FINAL_DEPLOY.md](./ESTADO_FINAL_DEPLOY.md)** - Estado del último deploy
+---
 
-### Requisitos Hostinger
+## 📖 Documentación
 
-- ✅ Plan Business (incluye Node.js)
-- ✅ Node.js 22.x
-- ✅ Dominio configurado (opcional)
-- ✅ SSL activado (Let's Encrypt incluido)
-
-### Costos Estimados
-
-- Hostinger Business: ~$4-8 USD/mes
-- OpenAI API: ~$5-20 USD/mes (según uso)
-- Mercado Pago: Comisión por transacción (~3-5%)
-- **Total**: ~$10-30 USD/mes
+- **[CHANGELOG.md](CHANGELOG.md)** - Historial de cambios y comandos CLI
+- **[TESTING-v2.3.0.md](TESTING-v2.3.0.md)** - Guía completa de testing
+- **db/schema-latam.sql** - Schema de base de datos
+- **db/setup-local.sh** - Script de setup automático
 
 ---
 
-## Licencia
+## 🔄 Flujo de Pago
 
-Privado - Todos los derechos reservados
+```
+1. Usuario elige plan → Selecciona cartas → Ingresa pregunta
+2. Frontend crea sesión → POST /api/pagos/preference
+3. Backend crea preferencia MP → Retorna preference_id
+4. Usuario completa pago en MP
+5. MP envía webhook → POST /api/pagos/webhook
+6. Backend guarda en MariaDB → Tabla: pagos
+7. Frontend verifica pago → GET /api/pagos/verificar/[sesion_id]
+8. Backend consulta BD → Retorna {pagado: true}
+9. Frontend genera lectura → OpenAI GPT-4o-mini
+10. Usuario ve lectura personalizada
+```
 
 ---
 
-*Desarrollado con ❤️ por Dr. Herrera - Figotilabs*
+## 🐛 Troubleshooting
+
+### Error: "Faltan variables de entorno: DB_USER"
+```bash
+# Verificar .env
+cat .env | grep DB_
+
+# Si no existe, copiar ejemplo
+cp .env.example .env
+nano .env
+```
+
+### Error: "Access denied for user 'taroti_user'"
+```bash
+mysql -u root -p
+GRANT ALL PRIVILEGES ON taroti_latam.* TO 'taroti_user'@'localhost';
+FLUSH PRIVILEGES;
+```
+
+### Error: "Table 'pagos' doesn't exist"
+```bash
+mysql -u taroti_user -p taroti_latam < db/schema-latam.sql
+```
+
+---
+
+## 📝 Historial Versiones
+
+- **v2.3.0** (2026-05-25): Refactor MariaDB - Persistencia permanente
+- **v2.2.9** (2026-05-24): Removido auto_return (página en blanco)
+- **v2.2.8** (2026-05-24): .htaccess + proxy Node.js (404 fix)
+- **v2.2.7** (2026-05-24): CSP configurado para MP
+- **v2.2.5** (2026-05-24): MVP base para fork LATAM
+
+Ver detalles: [CHANGELOG.md](CHANGELOG.md)
+
+---
+
+## 🎯 Roadmap
+
+- [ ] Testing local completo
+- [ ] Testing sandbox Mercado Pago
+- [ ] Deploy producción Hostinger
+- [ ] Monitoreo 24h
+- [ ] Backup automático BD
+
+---
+
+**Proyecto:** Taroti LATAM v2.3.0
+**Responsable:** Dr. Eduardo Herrera
+**Ubicación:** La Ligua, Valparaíso, Chile
+**Mercados:** Chile, Argentina, Colombia, Perú, México

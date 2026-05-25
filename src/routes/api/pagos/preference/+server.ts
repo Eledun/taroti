@@ -1,6 +1,6 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
-import { MERCADOPAGO_ACCESS_TOKEN, FRONTEND_URL } from '$env/static/private';
+import { env } from '$env/dynamic/private';
 
 interface MercadoPagoItem {
 	title: string;
@@ -9,8 +9,35 @@ interface MercadoPagoItem {
 	currency_id: string;
 }
 
+interface MercadoPagoPayer {
+	name?: string;
+	surname?: string;
+	email?: string;
+	phone?: {
+		area_code?: string;
+		number?: number;
+	};
+	identification?: {
+		type: string;
+		number: string;
+	};
+	address?: {
+		zip_code?: string;
+		street_name?: string;
+		street_number?: number;
+	};
+}
+
+interface MercadoPagoPaymentMethods {
+	excluded_payment_methods?: Array<{ id: string }>;
+	excluded_payment_types?: Array<{ id: string }>;
+	installments?: number;
+	default_installments?: number;
+}
+
 interface MercadoPagoPreference {
 	items: MercadoPagoItem[];
+	payer?: MercadoPagoPayer;
 	back_urls: {
 		success: string;
 		failure: string;
@@ -18,7 +45,7 @@ interface MercadoPagoPreference {
 	};
 	auto_return: string;
 	external_reference: string;
-	notification_url?: string;
+	payment_methods?: MercadoPagoPaymentMethods;
 }
 
 export const POST: RequestHandler = async ({ request }) => {
@@ -29,11 +56,14 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(400, 'Falta parámetro: sesion_id');
 	}
 
+	const MERCADOPAGO_ACCESS_TOKEN = env.MERCADOPAGO_ACCESS_TOKEN;
+	const FRONTEND_URL = env.FRONTEND_URL;
+
 	if (!MERCADOPAGO_ACCESS_TOKEN) {
 		throw error(500, 'MERCADOPAGO_ACCESS_TOKEN no configurado en el servidor');
 	}
 
-	// Crear preferencia de pago en Mercado Pago
+	// Crear preferencia de pago en Mercado Pago según mejores prácticas de MP Chile
 	const preference: MercadoPagoPreference = {
 		items: [
 			{
@@ -48,8 +78,15 @@ export const POST: RequestHandler = async ({ request }) => {
 			failure: `${FRONTEND_URL || 'http://localhost:5173'}/pago/error`,
 			pending: `${FRONTEND_URL || 'http://localhost:5173'}/pago/pendiente`
 		},
-		auto_return: 'approved',
-		external_reference: sesion_id
+		// auto_return removido para evitar CSP errors de Mercado Pago
+		// El usuario deberá hacer clic en "Volver al sitio" manualmente
+		external_reference: sesion_id,
+		payment_methods: {
+			excluded_payment_methods: [],
+			excluded_payment_types: [],
+			installments: 1,
+			default_installments: 1
+		}
 	};
 
 	try {
