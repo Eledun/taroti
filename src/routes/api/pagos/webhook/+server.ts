@@ -120,23 +120,55 @@ export const POST: RequestHandler = async ({ request }) => {
 					external_reference: pagoData.external_reference
 				});
 
-				// Si el pago fue aprobado, guardar el estado en BD
-				if (pagoData.status === 'approved' && pagoData.status_detail === 'accredited') {
-					const sesionId = pagoData.external_reference;
+				// Guardar/actualizar estado del pago en BD
+				const sesionId = pagoData.external_reference;
 
-					if (sesionId) {
-						// Guardar estado del pago en MariaDB
-						const { guardarPago } = await import('$lib/db.js');
+				if (sesionId) {
+					// Usar actualizarEstadoPago con todos los campos nuevos
+					const { actualizarEstadoPago, registrarAuditLog } = await import('$lib/db.js');
 
-						await guardarPago(
-							sesionId,
-							paymentId.toString(),
-							pagoData.status,
-							pagoData.status_detail
-						);
+					// Extraer detalles del pago
+					const tipoPago = pagoData.payment_type_id || null; // credit_card, debit_card, etc.
+					const metodoPago = pagoData.payment_method_id || null; // visa, mastercard, etc.
+					const cuotas = pagoData.installments || 1;
+					const montoNeto = pagoData.transaction_details?.net_received_amount || null;
+					const feeMp = pagoData.fee_details?.reduce((sum, fee) => sum + (fee.amount || 0), 0) || null;
+					const fechaPago = pagoData.date_approved || pagoData.date_last_updated || null;
 
-						console.log('[WEBHOOK] Pago confirmado y guardado en BD para sesión:', sesionId);
-					}
+					// Actualizar con todos los datos
+					await actualizarEstadoPago(
+						sesionId,
+						pagoData.status,
+						pagoData.status_detail,
+						{
+							paymentIdMp: paymentId.toString(),
+							tipoPago,
+							metodoPago,
+							cuotas,
+							montoNeto,
+							feeMp,
+							fechaPago
+						}
+					);
+
+					console.log('[WEBHOOK] Pago actualizado en BD:', {
+						sesion: sesionId,
+						estado: pagoData.status,
+						metodo: metodoPago,
+						cuotas,
+						monto_neto: montoNeto
+					});
+
+					// Registrar evento específico en audit log
+					await registrarAuditLog('webhook_pago_procesado', sesionId, {
+						payment_id: paymentId.toString(),
+						status: pagoData.status,
+						status_detail: pagoData.status_detail,
+						payment_type: tipoPago,
+						payment_method: metodoPago,
+						installments: cuotas,
+						amount: pagoData.transaction_amount
+					});
 				}
 
 				// Registrar evento de webhook para auditoría

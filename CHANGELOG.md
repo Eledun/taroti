@@ -7,6 +7,131 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.7] - 2026-05-25
+
+### ✅ MEDIUM Priority Complete - Payment Verification & Enhanced Webhook
+Finalización de todos los issues MEDIUM priority con verificación de pagos y webhook mejorado
+
+---
+
+### Added
+
+#### Endpoint POST /api/pagos/verificar
+**Archivo:** `src/routes/api/pagos/verificar/+server.ts`
+- Verifica estado de pago por sesion_id
+- Soporta POST (body) y GET (query param)
+- Retorna: pagado (boolean), pago (objeto), mensaje
+- Registra verificaciones en audit_log
+
+**Request POST:**
+```json
+{
+  "sesion_id": "1779755322187-oi91s8mt9"
+}
+```
+
+**Response:**
+```json
+{
+  "pagado": true,
+  "pago": {
+    "sesion_id": "...",
+    "payment_id_mp": "...",
+    "estado_mp": "approved",
+    "estado_detalle_mp": "accredited",
+    "plan_nombre": "Tres Cartas",
+    "monto_clp": 5000,
+    "tipo_pago": "credit_card",
+    "metodo_pago": "visa",
+    "fecha_pago": "2026-05-25T..."
+  },
+  "mensaje": "Pago aprobado y acreditado"
+}
+```
+
+**Uso alternativo GET:**
+```
+GET /api/pagos/verificar?sesion_id=xxx
+```
+
+### Changed
+
+#### POST /api/pagos/webhook - Enhanced
+**Archivo:** `src/routes/api/pagos/webhook/+server.ts:123-172`
+
+**Antes (v2.3.6):**
+- Solo guardaba estado básico (approved/rejected)
+- No extraía detalles del método de pago
+- Usaba guardarPago() con campos limitados
+
+**Después (v2.3.7):**
+1. Extrae TODOS los detalles del pago de Mercado Pago ✅
+2. Usa actualizarEstadoPago() con datos completos ✅
+3. Guarda: tipo_pago, metodo_pago, cuotas ✅
+4. Calcula: monto_neto, fee_mp ✅
+5. Registra evento específico en audit_log ✅
+6. Procesa TODOS los estados, no solo approved ✅
+
+**Campos extraídos del webhook:**
+```typescript
+tipoPago = pagoData.payment_type_id // credit_card, debit_card
+metodoPago = pagoData.payment_method_id // visa, mastercard
+cuotas = pagoData.installments
+montoNeto = pagoData.transaction_details.net_received_amount
+feeMp = sum(pagoData.fee_details[].amount)
+fechaPago = pagoData.date_approved || pagoData.date_last_updated
+```
+
+### Fixed
+
+**ISSUE-016:** ✅ Endpoint POST /api/pagos/verificar implementado
+- Verificación rápida de estado de pago
+- Alternativas POST y GET
+- Audit logging de verificaciones
+
+**ISSUE-018:** ✅ Webhook mejorado con todos los campos
+- Extrae tipo_pago y metodo_pago de MP
+- Calcula monto_neto y fee_mp
+- Actualiza cuotas y fecha_pago
+- Procesa todos los estados de pago
+
+### Technical Improvements
+
+**Payment Verification:**
+- Quick check endpoint for frontend polling
+- Complete payment details in response
+- Supports both POST and GET methods
+- Audit trail of all verifications
+
+**Webhook Intelligence:**
+- Extracts all Mercado Pago payment details
+- Calculates net amount and fees automatically
+- Stores payment method analytics
+- Processes all payment states (not just approved)
+- Better error handling and logging
+
+**Analytics Ready:**
+- Payment method distribution (credit vs debit)
+- Card brand popularity (visa, mastercard, etc.)
+- Installment usage patterns
+- Fee analysis for accounting
+
+### Statistics
+
+**Lines of Code:**
+- src/routes/api/pagos/verificar/+server.ts: +161 lines (new)
+- src/routes/api/pagos/webhook/+server.ts: +50 lines (enhanced)
+- Total: +211 lines
+
+**Coverage:**
+- 7/7 MEDIUM priority issues COMPLETED (100%) ✅
+- 21/27 total issues from analysis COMPLETED (78%)
+
+**Remaining:**
+- 6 LOW priority issues (architecture improvements)
+
+---
+
 ## [2.3.6] - 2026-05-25
 
 ### 💳 MEDIUM Priority - Payment System Enhancements
