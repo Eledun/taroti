@@ -2,7 +2,6 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import type { CartaTarot, Lectura, TipoTirada } from '$lib/types';
-import { actualizarLectura } from '$lib/db.js';
 
 // Importar datos de arcanos
 import { ARCANOS_MAYORES } from '$lib/data/arcanos-mayores';
@@ -43,7 +42,7 @@ ${cartasTexto}`;
 - Carta 4: Futuro inmediato
 - Carta 5: Objetivo o mejor resultado posible
 - Carta 6: Influencia del subconsciente
-- Carta 7: El consultante (su yo interno)
+- Carta 7: Tú mismo/a
 - Carta 8: Influencias externas
 - Carta 9: Esperanzas y miedos
 - Carta 10: Resultado final
@@ -53,7 +52,7 @@ ${cartasTexto}`;
 			break;
 
 		case 'rueda_del_anio':
-			promptEspecifico = `Esta es una tirada de Rueda del Año (13 cartas: 12 meses + carta central):
+			promptEspecifico = `Esta es una tirada de Rueda del Año (12 cartas, una por cada mes):
 - Carta 1: Enero
 - Carta 2: Febrero
 - Carta 3: Marzo
@@ -66,7 +65,6 @@ ${cartasTexto}`;
 - Carta 10: Octubre
 - Carta 11: Noviembre
 - Carta 12: Diciembre
-- Carta 13: El Año (centro - síntesis anual)
 
 Cartas seleccionadas:
 ${cartasTexto}`;
@@ -159,16 +157,6 @@ export const GET: RequestHandler = async ({ params, url }) => {
 
 		const data = await response.json();
 		const interpretacion = data.choices[0]?.message?.content || 'No se pudo generar la lectura';
-		const tokensUsados = data.usage?.total_tokens || 0;
-
-		// GUARDAR EN BD: Actualizar lectura con resultado de OpenAI
-		try {
-			await actualizarLectura(sesion_id, interpretacion, tokensUsados, 'gpt-4o');
-			console.log('[LECTURA] Guardada en BD:', sesion_id, '| Tokens:', tokensUsados);
-		} catch (dbErr) {
-			console.error('[LECTURA] Error guardando en BD:', dbErr);
-			// No fallar la request si falla el guardado, pero logear el error
-		}
 
 		// Construir respuesta
 		const lectura: Lectura = {

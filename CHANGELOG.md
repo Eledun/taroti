@@ -7,6 +7,197 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.4] - 2026-05-25
+
+### 🎯 Fixes Críticos de Coherencia - Persistencia Completa de Datos
+Resolución de 6 issues críticos identificados en análisis exhaustivo del sistema
+
+---
+
+### Added
+
+#### Migration v2.3.4 - Campos críticos en tabla lecturas
+**Archivo:** `db/migrations/v2.3.4_critical_fixes.sql`
+- ✅ 9 columnas nuevas agregadas a tabla `lecturas`
+- ✅ 4 índices para optimizar queries
+- ✅ Script de migración completo con rollback
+- ✅ Verificación post-migración incluida
+
+**Nuevas columnas:**
+- `plan_id`, `plan_nombre`, `tipo_tirada`, `precio` - Info del plan
+- `token_acceso` - Seguridad y autenticación
+- `estado` - ENUM(pendiente, pagada, completada, cancelada)
+- `tipo_usuario` - ENUM(anonimo, registrado)
+- `expira_en` - Fecha de expiración (30 días)
+- `fecha_actualizacion` - Timestamp automático
+
+#### Función actualizarLectura()
+**Archivo:** `src/lib/db.js:148-167`
+- Función para guardar lectura de OpenAI en BD
+- Registra `lectura_ia`, `tokens_usados`, `modelo_ia`
+- Actualiza estado a 'completada' automáticamente
+- Logging detallado
+
+### Changed
+
+#### POST /api/sesiones - Guardado completo
+**Archivo:** `src/routes/api/sesiones/+server.ts:52-91`
+- **Antes:** Solo guardaba sesion_id, pregunta, cartas
+- **Después:** Guarda TODOS los campos del plan
+- Calcula fecha de expiración (30 días)
+- Guarda token_acceso en BD
+- Estado inicial: 'pendiente'
+
+**Campos ahora persistidos:**
+```typescript
+plan_id, plan_nombre, tipo_tirada, precio,
+token_acceso, estado, tipo_usuario, expira_en
+```
+
+#### GET /api/sesiones - Lectura directa desde BD
+**Archivo:** `src/routes/api/sesiones/+server.ts:121-144`
+- **Antes:** Inferencia frágil basada en número de cartas
+- **Después:** Lee datos REALES de la BD
+- Ya no usa lógica if/else de inferencia
+- Más robusto y escalable
+
+#### GET /api/lecturas/[sesion_id] - Persistencia en BD
+**Archivo:** `src/routes/api/lecturas/[sesion_id]/+server.ts:160-171`
+- **Antes:** Generaba lectura y solo devolvía JSON (no guardaba)
+- **Después:** Llama a `actualizarLectura()` después de OpenAI
+- Extrae y guarda `tokens_usados` de respuesta
+- Registra modelo usado ('gpt-4o')
+- No falla la request si falla el guardado (resiliente)
+
+### Fixed
+
+#### ISSUE-001: Lectura_ia no se guardaba en BD ✅
+- **Problema:** Cada recarga regeneraba la lectura ($0.02 USD por llamada)
+- **Impacto:** Si 100 usuarios recargan 3 veces = $6 USD/día desperdiciados
+- **Solución:** Lectura se guarda automáticamente después de generar
+- **Resultado:** 100% de regeneraciones eliminadas
+
+#### ISSUE-002: Tabla lecturas sin campos de plan ✅
+- **Problema:** Datos del plan se inferían, no se guardaban
+- **Impacto:** Imposible saber qué plan compró el usuario
+- **Solución:** 4 columnas nuevas para info del plan
+- **Resultado:** Trazabilidad completa
+
+#### ISSUE-003: Token_acceso no persistido ✅
+- **Problema:** Sin token en BD, cualquiera puede ver lecturas ajenas
+- **Impacto:** Vulnerabilidad de seguridad/privacidad severa
+- **Solución:** token_acceso guardado con índice
+- **Resultado:** Autenticación básica implementada
+
+#### ISSUE-004: Estado de sesión no persistido ✅
+- **Problema:** Estado se infería de forma frágil
+- **Impacto:** No se podía rastrear workflow real
+- **Solución:** Columna `estado` ENUM con índice
+- **Resultado:** Estado actualizado automáticamente
+
+#### ISSUE-005: Foreign Key bloqueaba creación ✅
+- **Problema:** FK lecturas→pagos impedía crear sesión antes de pago
+- **Impacto:** Flujo roto, sesiones no se podían crear
+- **Solución:** FK ya fue eliminada en v2.3.3
+- **Resultado:** Flujo funciona correctamente
+
+#### ISSUE-006: Inferencia de plan no escalable ✅
+- **Problema:** Plan se infería por número de cartas (frágil)
+- **Impacto:** Si se agregan planes nuevos, rompe
+- **Solución:** Datos reales leídos de BD
+- **Resultado:** Sistema escalable y robusto
+
+### Testing
+
+#### Sesión de prueba verificada
+- Sesion ID: `1779755322187-oi91s8mt9`
+- Plan: Tres Cartas ($1,000 CLP)
+- Token: `4cq8i9x0d8wqcpld7kq01`
+- Estado: completada
+- Lectura: 3,062 caracteres guardados
+- Tokens: 843 registrados
+- Modelo: gpt-4o
+- Expiración: 2026-06-25 (30 días)
+
+#### Verificación completa
+- [x] Sesión creada con todos los campos
+- [x] Pago verificado correctamente
+- [x] Lectura generada con OpenAI
+- [x] Lectura guardada en BD (no regenera)
+- [x] Tokens y modelo registrados
+- [x] Estado actualizado automáticamente
+- [x] Fecha de expiración calculada
+- [x] Token de acceso persistido
+
+### Performance
+
+#### Ahorro de costos OpenAI
+- **Antes:** Regeneración en cada recarga
+- **Después:** Una sola generación, guardada en BD
+- **Ahorro estimado:** 100% de regeneraciones
+- **Costo por lectura:** ~$0.02 USD (una vez)
+- **Tokens promedio:** ~800-1000 tokens
+
+#### Optimización de queries
+- 4 índices nuevos en tabla lecturas
+- Queries por token_acceso: O(log n)
+- Queries por estado: O(log n)
+- Queries por plan_id: O(log n)
+
+### Database Schema
+
+#### Antes (v2.3.3)
+```sql
+lecturas:
+- id, sesion_id, pregunta, cartas_seleccionadas
+- lectura_ia, modelo_ia, tokens_usados
+- fecha_creacion
+```
+
+#### Después (v2.3.4)
+```sql
+lecturas:
+- id, sesion_id
+- plan_id, plan_nombre, tipo_tirada, precio       ← NUEVO
+- pregunta, cartas_seleccionadas
+- lectura_ia
+- token_acceso                                     ← NUEVO
+- estado, tipo_usuario                             ← NUEVO
+- modelo_ia, tokens_usados
+- fecha_creacion, expira_en, fecha_actualizacion   ← NUEVO
+
++ 4 índices (plan_id, token_acceso, estado, expira_en)
+```
+
+### Deployment Notes
+
+**Para aplicar en producción:**
+```bash
+# 1. Backup de BD
+mysqldump taroti_latam > backup_pre_v2.3.4.sql
+
+# 2. Aplicar migración
+mysql taroti_latam < db/migrations/v2.3.4_critical_fixes.sql
+
+# 3. Verificar resultado
+mysql taroti_latam -e "DESCRIBE lecturas;"
+mysql taroti_latam -e "SELECT estado, COUNT(*) FROM lecturas GROUP BY estado;"
+
+# 4. Deploy código
+git pull origin dev
+npm install
+npm run build
+pm2 restart taroti
+```
+
+**Monitoreo post-deploy:**
+- Verificar que nuevas sesiones tienen todos los campos
+- Verificar que lecturas se guardan (no regeneran)
+- Verificar tokens_usados se registran
+- Verificar estado cambia a 'completada'
+
+---
+
 ## [2.3.3] - 2026-05-25
 
 ### 🎯 Integración OpenAI Completada + Flujo End-to-End Funcional

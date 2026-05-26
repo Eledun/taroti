@@ -146,6 +146,27 @@ export async function verificarPago(sesionId) {
 }
 
 /**
+ * Actualizar lectura con resultado de OpenAI
+ * @param {string} sesionId
+ * @param {string} lecturaIA
+ * @param {number} tokensUsados
+ * @param {string} modeloIA
+ */
+export async function actualizarLectura(sesionId, lecturaIA, tokensUsados, modeloIA) {
+	const sql = `
+		UPDATE lecturas
+		SET lectura_ia = ?,
+			tokens_usados = ?,
+			modelo_ia = ?,
+			estado = 'completada',
+			fecha_actualizacion = NOW()
+		WHERE sesion_id = ?
+	`;
+	await query(sql, [lecturaIA, tokensUsados, modeloIA, sesionId]);
+	console.log('[DB] Lectura actualizada:', sesionId, '| Modelo:', modeloIA, '| Tokens:', tokensUsados);
+}
+
+/**
  * Registrar evento de webhook para auditoría
  *
  * @param {string} paymentId - ID del pago

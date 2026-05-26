@@ -49,19 +49,39 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	};
 
-	// Guardar en MariaDB
+	// Guardar en MariaDB con TODOS los campos
 	try {
 		const pool = getPool();
 		const conn = await pool.getConnection();
 
 		try {
+			// Calcular fecha de expiración (30 días)
+			const expiraEn = new Date();
+			expiraEn.setDate(expiraEn.getDate() + 30);
+
 			await conn.query(
-				`INSERT INTO lecturas (sesion_id, pregunta, cartas_seleccionadas, lectura_ia)
-				 VALUES (?, ?, ?, ?)`,
-				[sesionId, pregunta, JSON.stringify(cartas), ''] // lectura_ia vacía por ahora
+				`INSERT INTO lecturas (
+					sesion_id, plan_id, plan_nombre, tipo_tirada, precio,
+					pregunta, cartas_seleccionadas, lectura_ia,
+					token_acceso, estado, tipo_usuario, expira_en
+				) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+				[
+					sesionId,
+					plan_id,
+					plan.nombre,
+					plan.tipo_tirada,
+					plan.precio_final,
+					pregunta,
+					JSON.stringify(cartas),
+					'', // lectura_ia vacía por ahora
+					tokenAcceso,
+					'pendiente',
+					'anonimo',
+					expiraEn.toISOString().slice(0, 19).replace('T', ' ')
+				]
 			);
 
-			console.log('[SESION] Sesión guardada en BD:', sesionId);
+			console.log('[SESION] Sesión guardada en BD:', sesionId, '| Plan:', plan.nombre, '| Token:', tokenAcceso);
 		} finally {
 			conn.release();
 		}
@@ -101,37 +121,22 @@ export const GET: RequestHandler = async ({ url }) => {
 			// Parsear cartas
 			const cartas = typeof row.cartas_seleccionadas === 'string' ? JSON.parse(row.cartas_seleccionadas) : row.cartas_seleccionadas;
 
-			// Inferir plan basado en número de cartas
-			let planNombre = 'Lectura de Tarot';
-			let tipoTirada = 'tres_cartas';
-			let precio = 5000;
-
-			const numCartas = cartas.length;
-			if (numCartas === 3) {
-				planNombre = 'Tirada de 3 Cartas';
-				tipoTirada = 'tres_cartas';
-				precio = 5000;
-			} else if (numCartas === 10) {
-				planNombre = 'Cruz Celta';
-				tipoTirada = 'cruz_celta';
-				precio = 15000;
-			} else if (numCartas === 13) {
-				planNombre = 'Rueda del Año';
-				tipoTirada = 'rueda_del_anio';
-				precio = 20000;
-			}
+			// Usar datos REALES de la BD (ya no inferimos)
+			const planNombre = row.plan_nombre || 'Lectura de Tarot';
+			const tipoTirada = row.tipo_tirada || 'tres_cartas';
+			const precio = row.precio || 5000;
 
 			// Reconstruir objeto Sesion desde la BD
 			const sesion: Sesion = {
 				id: row.sesion_id,
 				pregunta: row.pregunta,
 				cartas,
-				estado: row.lectura_ia ? 'completada' : 'pendiente',
+				estado: row.estado || 'pendiente',
 				precio,
 				generando: false,
 				creado_en: row.fecha_creacion?.toISOString() || new Date().toISOString(),
-				tipo_usuario: 'anonimo',
-				token_acceso: '', // No guardamos el token en BD
+				tipo_usuario: row.tipo_usuario || 'anonimo',
+				token_acceso: row.token_acceso || '',
 				plan: {
 					nombre: planNombre,
 					tipo_tirada: tipoTirada
