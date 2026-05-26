@@ -186,6 +186,175 @@ export async function registrarWebhookEvent(paymentId, tipo, accion, payload) {
 }
 
 /**
+ * Obtener una lectura específica por sesion_id
+ * Incluye validación de expiración y token de acceso
+ *
+ * @param {string} sesionId - ID de sesión único
+ * @param {string} tokenAcceso - Token de acceso opcional para validación
+ * @returns {Promise<object|null>} Lectura completa o null si no existe/expiró
+ */
+export async function obtenerLectura(sesionId, tokenAcceso = null) {
+	const sql = `
+		SELECT
+			l.id,
+			l.sesion_id,
+			l.plan_id,
+			l.plan_nombre,
+			l.tipo_tirada,
+			l.precio,
+			l.pregunta,
+			l.cartas_seleccionadas,
+			l.lectura_ia,
+			l.token_acceso,
+			l.estado,
+			l.tipo_usuario,
+			l.tokens_usados,
+			l.modelo_ia,
+			l.fecha_creacion,
+			l.expira_en,
+			l.fecha_actualizacion,
+			p.payment_id_mp,
+			p.estado_mp,
+			p.fecha_pago
+		FROM lecturas l
+		LEFT JOIN pagos p ON l.sesion_id = p.sesion_id
+		WHERE l.sesion_id = ?
+		LIMIT 1
+	`;
+
+	const rows = await query(sql, [sesionId]);
+
+	if (rows.length === 0) {
+		return null;
+	}
+
+	const lectura = rows[0];
+
+	// Validar token de acceso si se proporciona
+	if (tokenAcceso && lectura.token_acceso !== tokenAcceso) {
+		console.warn('[DB] Token de acceso inválido para sesión:', sesionId);
+		return null;
+	}
+
+	// Validar expiración
+	if (lectura.expira_en) {
+		const ahora = new Date();
+		const expiracion = new Date(lectura.expira_en);
+		if (ahora > expiracion) {
+			console.warn('[DB] Lectura expirada:', sesionId, '| Expiró:', lectura.expira_en);
+			return null;
+		}
+	}
+
+	// Parsear cartas_seleccionadas de JSON
+	if (lectura.cartas_seleccionadas) {
+		try {
+			lectura.cartas_seleccionadas = JSON.parse(lectura.cartas_seleccionadas);
+		} catch (err) {
+			console.error('[DB] Error parseando cartas:', err);
+			lectura.cartas_seleccionadas = [];
+		}
+	}
+
+	return lectura;
+}
+
+/**
+ * Listar lecturas con filtros opcionales
+ * Útil para dashboards y reportes
+ *
+ * @param {object} filtros - Filtros opcionales
+ * @param {string} filtros.estado - Filtrar por estado (pendiente, pagada, completada, cancelada)
+ * @param {string} filtros.plan_id - Filtrar por plan
+ * @param {Date} filtros.desde - Fecha inicio
+ * @param {Date} filtros.hasta - Fecha fin
+ * @param {number} filtros.limit - Límite de resultados (default: 100)
+ * @param {number} filtros.offset - Offset para paginación (default: 0)
+ * @returns {Promise<Array>} Array de lecturas
+ */
+export async function listarLecturas(filtros = {}) {
+	const {
+		estado = null,
+		plan_id = null,
+		desde = null,
+		hasta = null,
+		limit = 100,
+		offset = 0
+	} = filtros;
+
+	let sql = `
+		SELECT
+			l.id,
+			l.sesion_id,
+			l.plan_id,
+			l.plan_nombre,
+			l.tipo_tirada,
+			l.precio,
+			l.pregunta,
+			l.estado,
+			l.tipo_usuario,
+			l.tokens_usados,
+			l.modelo_ia,
+			l.fecha_creacion,
+			l.expira_en,
+			p.payment_id_mp,
+			p.estado_mp,
+			p.fecha_pago
+		FROM lecturas l
+		LEFT JOIN pagos p ON l.sesion_id = p.sesion_id
+		WHERE 1=1
+	`;
+
+	const params = [];
+
+	if (estado) {
+		sql += ' AND l.estado = ?';
+		params.push(estado);
+	}
+
+	if (plan_id) {
+		sql += ' AND l.plan_id = ?';
+		params.push(plan_id);
+	}
+
+	if (desde) {
+		sql += ' AND l.fecha_creacion >= ?';
+		params.push(desde);
+	}
+
+	if (hasta) {
+		sql += ' AND l.fecha_creacion <= ?';
+		params.push(hasta);
+	}
+
+	sql += ' ORDER BY l.fecha_creacion DESC';
+	sql += ' LIMIT ? OFFSET ?';
+	params.push(limit, offset);
+
+	const rows = await query(sql, params);
+
+	return rows;
+}
+
+/**
+ * Registrar evento de auditoría para trazabilidad
+ *
+ * @param {string} evento - Tipo de evento (lectura_generada, pago_aprobado, etc.)
+ * @param {string} sesionId - ID de sesión relacionado
+ * @param {object} datos - Datos adicionales del evento
+ * @returns {Promise<void>}
+ */
+export async function registrarAuditLog(evento, sesionId, datos = {}) {
+	const sql = `
+		INSERT INTO audit_log (evento, sesion_id, datos, fecha_evento)
+		VALUES (?, ?, ?, NOW())
+	`;
+
+	await query(sql, [evento, sesionId, JSON.stringify(datos)]);
+	console.log('[AUDIT]', evento, '| Sesión:', sesionId);
+}
+
+/**
  * Cerrar pool de conexiones (para testing o shutdown)
  */
 export async function closePool() {

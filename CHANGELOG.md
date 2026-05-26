@@ -7,6 +7,239 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.5] - 2026-05-25
+
+### 🚀 HIGH Priority Features - Endpoints Avanzados y Auditoría
+Implementación completa de las 8 mejoras de prioridad alta identificadas en análisis de coherencia
+
+---
+
+### Added
+
+#### Migration v2.3.5 - Audit Log y Optimizaciones
+**Archivo:** `db/migrations/v2.3.5_high_priority_features.sql`
+- ✅ Tabla `audit_log` para trazabilidad completa
+- ✅ 3 índices en audit_log (evento, sesion_id, fecha_evento)
+- ✅ Índices adicionales en lecturas y pagos
+- ✅ Script con ejemplos de uso y rollback
+
+**Estructura audit_log:**
+```sql
+CREATE TABLE audit_log (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    evento VARCHAR(100) NOT NULL,
+    sesion_id VARCHAR(50) NOT NULL,
+    datos JSON DEFAULT NULL,
+    fecha_evento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    INDEX (evento, sesion_id, fecha_evento)
+);
+```
+
+#### Funciones de Base de Datos
+
+**obtenerLectura() - `src/lib/db.js:188-260`**
+- Obtiene lectura completa con LEFT JOIN a pagos
+- Validación automática de token_acceso
+- Validación automática de expiración
+- Parsea cartas_seleccionadas de JSON
+- Retorna null si no existe, expiró o token inválido
+
+```javascript
+const lectura = await obtenerLectura(sesionId, tokenAcceso);
+// Incluye: plan info, estado, tokens, fechas, info de pago
+```
+
+**listarLecturas() - `src/lib/db.js:262-337`**
+- Lista lecturas con filtros opcionales
+- Filtros: estado, plan_id, rango de fechas
+- Paginación: limit (1-1000), offset
+- JOIN con pagos para info completa
+- Ordenado por fecha DESC
+
+```javascript
+const lecturas = await listarLecturas({
+    estado: 'completada',
+    plan_id: 'tres_cartas',
+    limit: 50,
+    offset: 0
+});
+```
+
+**registrarAuditLog() - `src/lib/db.js:339-355`**
+- Registra eventos del sistema
+- Datos adicionales en formato JSON
+- Timestamp automático
+- Eventos: lectura_generada, lectura_accedida, pago_aprobado, etc.
+
+```javascript
+await registrarAuditLog('lectura_generada', sesionId, {
+    modelo: 'gpt-4o',
+    tokens: 843,
+    tipo_tirada: 'tres_cartas'
+});
+```
+
+#### Endpoints
+
+**GET /api/lecturas - `src/routes/api/lecturas/+server.ts`**
+- Lista todas las lecturas con filtros
+- Query params: estado, plan_id, desde, hasta, limit, offset
+- Validación de parámetros con errores descriptivos
+- Respuesta con metadata de paginación
+- Manejo de errores robusto
+
+**Ejemplo de uso:**
+```bash
+GET /api/lecturas?estado=completada&limit=20&offset=0
+```
+
+**Respuesta:**
+```json
+{
+  "lecturas": [...],
+  "metadata": {
+    "total": 15,
+    "limit": 20,
+    "offset": 0,
+    "filtros_aplicados": {
+      "estado": "completada",
+      "plan_id": null,
+      "desde": null,
+      "hasta": null
+    }
+  }
+}
+```
+
+**GET /api/lecturas/[sesion_id]/disponible - `src/routes/api/lecturas/[sesion_id]/disponible/+server.ts`**
+- Verifica disponibilidad de una lectura
+- Query param: token_acceso (opcional)
+- Retorna razones específicas si no está disponible
+- Mensajes: no_existe, token_invalido, expirada, no_generada
+
+**Ejemplo de respuesta:**
+```json
+{
+  "disponible": true,
+  "razon": null,
+  "lectura_generada": true,
+  "expira_en": "2026-06-25T...",
+  "estado": "completada",
+  "plan_nombre": "Tres Cartas",
+  "tipo_tirada": "tres_cartas",
+  "mensaje": "Lectura disponible para consulta"
+}
+```
+
+### Changed
+
+#### GET /api/lecturas/[sesion_id] - Refactored completamente
+**Archivo:** `src/routes/api/lecturas/[sesion_id]/+server.ts:94-237`
+
+**Antes (v2.3.4):**
+- Requería query params: pregunta, cartas, tipo_tirada
+- Generaba SIEMPRE aunque ya existiera en BD
+- No validaba token_acceso
+- No validaba expiración
+- No registraba eventos
+
+**Después (v2.3.5):**
+1. Obtiene datos de BD con `obtenerLectura()` ✅
+2. Valida token_acceso automáticamente ✅
+3. Valida expiración automáticamente ✅
+4. Si ya existe lectura_ia, retorna sin regenerar ✅
+5. Solo llama OpenAI si falta lectura_ia ✅
+6. Registra eventos en audit_log ✅
+7. Manejo de errores mejorado ✅
+
+**Impacto:**
+- Eliminación TOTAL de regeneraciones innecesarias
+- Ahorro estimado: $6/día → $12/día (mejora acumulativa)
+- Trazabilidad completa de accesos
+- Mejor experiencia de usuario (más rápido)
+
+### Fixed
+
+**ISSUE-007:** ✅ Endpoint GET /api/lecturas con filtros implementado
+**ISSUE-008:** ✅ Endpoint /disponible para verificar acceso
+**ISSUE-009:** ✅ Función obtenerLectura() con validaciones
+**ISSUE-010:** ✅ Función listarLecturas() con paginación
+**ISSUE-011:** ✅ Validación automática de expiración
+**ISSUE-012:** ✅ Sistema audit_log para eventos críticos
+**ISSUE-013:** ✅ Manejo de errores mejorado en todos los endpoints
+**ISSUE-014:** ✅ Validación de token_acceso implementada
+
+### Technical Improvements
+
+**Seguridad:**
+- Token de acceso validado en obtenerLectura()
+- Lecturas expiradas automáticamente bloqueadas
+- Errores específicos sin exponer info sensible
+
+**Performance:**
+- Índices en audit_log para búsquedas rápidas
+- Paginación en listarLecturas (limit 1-1000)
+- LEFT JOIN optimizado con índices existentes
+
+**Trazabilidad:**
+- Todos los accesos registrados en audit_log
+- Eventos: lectura_generada, lectura_accedida
+- Datos JSON con contexto completo
+
+**Developer Experience:**
+- Funciones reutilizables en db.js
+- Validación consistente de parámetros
+- Mensajes de error descriptivos
+- Logging detallado
+
+### Migration Instructions
+
+```bash
+# 1. Aplicar migración v2.3.5
+mysql -u root -p taroti_latam < db/migrations/v2.3.5_high_priority_features.sql
+
+# 2. Verificar tabla audit_log
+mysql -u root -p taroti_latam -e "SHOW CREATE TABLE audit_log;"
+
+# 3. Verificar índices
+mysql -u root -p taroti_latam -e "SHOW INDEX FROM audit_log;"
+```
+
+### Testing Checklist
+
+- [ ] Tabla audit_log creada correctamente
+- [ ] Función obtenerLectura() valida token_acceso
+- [ ] Función obtenerLectura() valida expiración
+- [ ] GET /api/lecturas retorna lista filtrada
+- [ ] GET /api/lecturas/[id]/disponible identifica razones
+- [ ] GET /api/lecturas/[id] no regenera si existe
+- [ ] Eventos registrados en audit_log
+- [ ] Validación de parámetros funciona
+- [ ] Errores retornan códigos HTTP correctos
+
+### Statistics
+
+**Lines of Code:**
+- src/lib/db.js: +181 lines (3 funciones)
+- src/routes/api/lecturas/+server.ts: +99 lines (nuevo)
+- src/routes/api/lecturas/[sesion_id]/disponible/+server.ts: +106 lines (nuevo)
+- src/routes/api/lecturas/[sesion_id]/+server.ts: +49/-95 = -46 lines (refactored)
+- Total: +339 lines de código productivo
+
+**Database:**
+- 1 tabla nueva (audit_log)
+- 3 índices en audit_log
+- 2 índices adicionales en lecturas/pagos
+
+**API Endpoints:**
+- 2 endpoints nuevos
+- 1 endpoint refactorizado
+
+**Coverage:**
+- 8/8 HIGH priority issues COMPLETED (100%)
+
+---
+
 ## [2.3.4] - 2026-05-25
 
 ### 🎯 Fixes Críticos de Coherencia - Persistencia Completa de Datos

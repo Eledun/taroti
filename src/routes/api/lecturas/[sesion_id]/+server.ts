@@ -2,7 +2,7 @@ import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import type { CartaTarot, Lectura, TipoTirada } from '$lib/types';
-import { actualizarLectura } from '$lib/db.js';
+import { actualizarLectura, obtenerLectura, registrarAuditLog } from '$lib/db.js';
 
 // Importar datos de arcanos
 import { ARCANOS_MAYORES } from '$lib/data/arcanos-mayores';
@@ -99,34 +99,63 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		throw error(400, 'Falta parámetro: sesion_id');
 	}
 
-	const OPENAI_API_KEY = env.OPENAI_API_KEY;
-
-	if (!OPENAI_API_KEY) {
-		throw error(500, 'OPENAI_API_KEY no configurado en el servidor');
-	}
-
-	// Aquí deberíamos obtener la sesión desde el almacenamiento
-	// Por ahora, asumimos que los datos vienen en query params o necesitamos implementar persistencia
-	const pregunta = url.searchParams.get('pregunta');
-	const cartasRaw = url.searchParams.get('cartas');
-	const tipoTirada = url.searchParams.get('tipo_tirada') as TipoTirada;
-	const planNombre = url.searchParams.get('plan_nombre');
-
-	if (!pregunta || !cartasRaw || !tipoTirada) {
-		throw error(400, 'Faltan parámetros: pregunta, cartas, tipo_tirada');
-	}
-
-	let cartas: CartaTarot[];
 	try {
-		cartas = JSON.parse(cartasRaw);
-	} catch {
-		throw error(400, 'Formato de cartas inválido');
-	}
+		// Paso 1: Obtener lectura de BD con validación de token y expiración
+		const lecturaDB = await obtenerLectura(sesion_id, tokenAcceso || undefined);
 
-	// Construir prompt
-	const prompt = construirPromptSegunTirada(tipoTirada, pregunta, cartas);
+		if (!lecturaDB) {
+			throw error(404, 'Lectura no encontrada, expirada o token inválido');
+		}
 
-	try {
+		// Paso 2: Verificar si ya tiene lectura_ia generada
+		if (lecturaDB.lectura_ia && lecturaDB.lectura_ia.trim() !== '') {
+			console.log('[LECTURA] Ya existe en BD:', sesion_id, '- Retornando sin regenerar');
+
+			// Registrar acceso a lectura existente
+			try {
+				await registrarAuditLog('lectura_accedida', sesion_id, {
+					metodo: 'GET',
+					regenerada: false
+				});
+			} catch (auditErr) {
+				console.error('[AUDIT] Error registrando acceso:', auditErr);
+			}
+
+			// Retornar lectura existente
+			const lectura: Lectura = {
+				id: `lectura-${sesion_id}`,
+				sesion_id,
+				pregunta: lecturaDB.pregunta,
+				cartas: lecturaDB.cartas_seleccionadas,
+				ambito_detectado: 'general',
+				interpretacion: lecturaDB.lectura_ia,
+				creado_en: lecturaDB.fecha_creacion.toISOString(),
+				expira_en: lecturaDB.expira_en?.toISOString() || null,
+				plan: {
+					nombre: lecturaDB.plan_nombre || 'Lectura de Tarot',
+					tipo_tirada: lecturaDB.tipo_tirada as TipoTirada
+				}
+			};
+
+			return json(lectura);
+		}
+
+		// Paso 3: No tiene lectura_ia, generar con OpenAI
+		const OPENAI_API_KEY = env.OPENAI_API_KEY;
+
+		if (!OPENAI_API_KEY) {
+			throw error(500, 'OPENAI_API_KEY no configurado en el servidor');
+		}
+
+		const pregunta = lecturaDB.pregunta;
+		const cartas: CartaTarot[] = lecturaDB.cartas_seleccionadas;
+		const tipoTirada = lecturaDB.tipo_tirada as TipoTirada;
+
+		// Construir prompt
+		const prompt = construirPromptSegunTirada(tipoTirada, pregunta, cartas);
+
+		console.log('[LECTURA] Generando con OpenAI:', sesion_id, '| Tipo:', tipoTirada);
+
 		// Llamar a OpenAI
 		const response = await fetch('https://api.openai.com/v1/chat/completions', {
 			method: 'POST',
@@ -165,6 +194,13 @@ export const GET: RequestHandler = async ({ params, url }) => {
 		try {
 			await actualizarLectura(sesion_id, interpretacion, tokensUsados, 'gpt-4o');
 			console.log('[LECTURA] Guardada en BD:', sesion_id, '| Tokens:', tokensUsados);
+
+			// Registrar generación en audit log
+			await registrarAuditLog('lectura_generada', sesion_id, {
+				modelo: 'gpt-4o',
+				tokens: tokensUsados,
+				tipo_tirada: tipoTirada
+			});
 		} catch (dbErr) {
 			console.error('[LECTURA] Error guardando en BD:', dbErr);
 			// No fallar la request si falla el guardado, pero logear el error
@@ -178,17 +214,24 @@ export const GET: RequestHandler = async ({ params, url }) => {
 			cartas,
 			ambito_detectado: 'general',
 			interpretacion,
-			creado_en: new Date().toISOString(),
-			expira_en: null,
+			creado_en: lecturaDB.fecha_creacion.toISOString(),
+			expira_en: lecturaDB.expira_en?.toISOString() || null,
 			plan: {
-				nombre: planNombre || 'Lectura de Tarot',
+				nombre: lecturaDB.plan_nombre || 'Lectura de Tarot',
 				tipo_tirada: tipoTirada
 			}
 		};
 
 		return json(lectura);
 	} catch (err) {
-		console.error('[OpenAI] Error:', err);
-		throw error(500, 'Error al comunicarse con OpenAI');
+		console.error('[API] Error en GET /api/lecturas/[sesion_id]:', err);
+
+		// Si ya es un error de SvelteKit, re-lanzarlo
+		if (err && typeof err === 'object' && 'status' in err) {
+			throw err;
+		}
+
+		// Error genérico
+		throw error(500, 'Error al procesar lectura');
 	}
 };
