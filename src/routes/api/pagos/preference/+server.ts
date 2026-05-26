@@ -1,6 +1,7 @@
 import { json, error } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
+import { guardarPreferenceId, registrarAuditLog } from '$lib/db.js';
 
 interface MercadoPagoItem {
 	title: string;
@@ -50,7 +51,7 @@ interface MercadoPagoPreference {
 
 export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
-	const { sesion_id, plan_nombre, precio } = body;
+	const { sesion_id, plan_nombre, precio, email, nombre, telefono } = body;
 
 	if (!sesion_id) {
 		throw error(400, 'Falta parámetro: sesion_id');
@@ -88,6 +89,29 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	};
 
+	// Agregar información del comprador si se proporciona
+	if (email || nombre) {
+		preference.payer = {};
+
+		if (email) {
+			preference.payer.email = email;
+		}
+
+		if (nombre) {
+			const partesNombre = nombre.split(' ');
+			preference.payer.name = partesNombre[0];
+			if (partesNombre.length > 1) {
+				preference.payer.surname = partesNombre.slice(1).join(' ');
+			}
+		}
+
+		if (telefono) {
+			preference.payer.phone = {
+				number: parseInt(telefono.replace(/\D/g, ''))
+			};
+		}
+	}
+
 	try {
 		const response = await fetch('https://api.mercadopago.com/checkout/preferences', {
 			method: 'POST',
@@ -106,12 +130,35 @@ export const POST: RequestHandler = async ({ request }) => {
 
 		const data = await response.json();
 
+		// Guardar preference_id en BD
+		try {
+			await guardarPreferenceId(sesion_id, data.id, sesion_id);
+			console.log('[PREFERENCE] Guardada en BD:', sesion_id, '| Preference:', data.id);
+
+			// Registrar evento en audit log
+			await registrarAuditLog('preferencia_creada', sesion_id, {
+				preference_id: data.id,
+				plan_nombre: plan_nombre,
+				precio: precio,
+				email: email || null
+			});
+		} catch (dbErr) {
+			console.error('[PREFERENCE] Error guardando en BD:', dbErr);
+			// No fallar la request si falla el guardado
+		}
+
 		return json({
 			preference_id: data.id,
 			init_point: data.init_point
 		});
 	} catch (err) {
 		console.error('[MercadoPago] Error:', err);
+
+		// Si ya es un error de SvelteKit, re-lanzarlo
+		if (err && typeof err === 'object' && 'status' in err) {
+			throw err;
+		}
+
 		throw error(500, 'Error al comunicarse con Mercado Pago');
 	}
 };

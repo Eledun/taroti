@@ -7,6 +7,134 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.6] - 2026-05-25
+
+### 💳 MEDIUM Priority - Payment System Enhancements
+Mejoras al sistema de pagos con campos adicionales y funciones de gestión
+
+---
+
+### Added
+
+#### Migration v2.3.6 - Enhanced Payments Table
+**Archivo:** `db/migrations/v2.3.6_medium_priority_payments.sql`
+- ✅ 14 columnas nuevas en tabla `pagos`
+- ✅ 4 índices adicionales para búsquedas
+- ✅ Soporte para preference_id, email, metadata
+
+**Nuevas columnas en pagos:**
+- `preference_id`, `external_reference`, `merchant_order_id` - Tracking de MP
+- `email_usuario`, `nombre_usuario`, `telefono_usuario` - Info de contacto
+- `tipo_pago`, `metodo_pago`, `cuotas` - Detalles del método de pago
+- `monto_neto`, `fee_mp` - Contabilidad precisa
+- `ip_address`, `user_agent` - Seguridad y fraud detection
+- `metadata_extra` (JSON) - Flexibilidad para datos futuros
+
+#### Funciones de Gestión de Pagos
+
+**obtenerPago() - `src/lib/db.js:363-414`**
+- Obtiene información completa de pago por sesion_id
+- Incluye todos los 14 nuevos campos
+- Parsea metadata_extra JSON automáticamente
+
+**actualizarEstadoPago() - `src/lib/db.js:425-481`**
+- Actualiza estado de pago con datos opcionales
+- Soporta actualización simple o completa
+- COALESCE para mantener valores existentes
+
+**guardarPreferenceId() - `src/lib/db.js:491-502`**
+- Guarda preference_id al crear preferencia
+- Actualiza external_reference
+- Logging detallado
+
+**listarPagos() - `src/lib/db.js:516-575`**
+- Lista pagos con filtros opcionales
+- Filtros: estado_mp, email_usuario, rango de fechas
+- Paginación con limit/offset
+
+### Changed
+
+#### POST /api/pagos/preference - Enhanced
+**Archivo:** `src/routes/api/pagos/preference/+server.ts`
+
+**Nuevas capacidades:**
+1. Acepta email, nombre, telefono en request body
+2. Envía payer info a Mercado Pago
+3. Guarda preference_id en BD después de crear
+4. Registra evento en audit_log
+5. Mejor manejo de errores
+
+**Antes:**
+```typescript
+const { sesion_id, plan_nombre, precio } = body;
+// No guardaba preference_id
+// No aceptaba info del usuario
+```
+
+**Después:**
+```typescript
+const { sesion_id, plan_nombre, precio, email, nombre, telefono } = body;
+// Guarda preference_id en BD
+// Envía payer info a MP
+// Registra en audit_log
+```
+
+### Fixed
+
+**ISSUE-015:** ✅ Migration con campos adicionales en pagos
+**ISSUE-017:** ✅ Función obtenerPago() implementada
+**ISSUE-019:** ✅ Función actualizarEstadoPago() implementada
+**ISSUE-020:** ✅ preference_id guardado y tracked
+**ISSUE-021:** ✅ Email y datos de usuario en pagos
+
+**Pending for future versions:**
+- ISSUE-016: Endpoint POST /api/pagos/verificar
+- ISSUE-018: Webhook mejorado con todos los campos nuevos
+
+### Technical Improvements
+
+**Payment Tracking:**
+- Complete preference lifecycle tracking
+- External reference correlation
+- Merchant order ID support
+
+**User Data:**
+- Email for notifications
+- Contact info for support
+- Payer info sent to MP for better UX
+
+**Financial Details:**
+- Net amount tracking (monto_neto)
+- MP fee tracking (fee_mp)
+- Payment method analytics (tipo_pago, metodo_pago)
+- Installments tracking (cuotas)
+
+**Security & Fraud:**
+- IP address logging
+- User agent tracking
+- Flexible metadata for future needs
+
+**Database Performance:**
+- 4 new indexes for common queries
+- Efficient filtering by preference_id, email
+
+### Statistics
+
+**Lines of Code:**
+- src/lib/db.js: +223 lines (4 functions)
+- src/routes/api/pagos/preference/+server.ts: +62 lines (enhanced)
+- Total: +285 lines
+
+**Database:**
+- 14 new columns in pagos table
+- 4 new indexes
+
+**Coverage:**
+- 5/7 MEDIUM priority issues COMPLETED (71%)
+- 19/27 total issues from analysis COMPLETED (70%)
+
+---
+
 ## [2.3.5] - 2026-05-25
 
 ### 🚀 HIGH Priority Features - Endpoints Avanzados y Auditoría

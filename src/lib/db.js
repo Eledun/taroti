@@ -355,6 +355,224 @@ export async function registrarAuditLog(evento, sesionId, datos = {}) {
 }
 
 /**
+ * Obtener información completa de un pago por sesion_id
+ *
+ * @param {string} sesionId - ID de sesión único
+ * @returns {Promise<object|null>} Pago completo o null si no existe
+ */
+export async function obtenerPago(sesionId) {
+	const sql = `
+		SELECT
+			p.id,
+			p.sesion_id,
+			p.preference_id,
+			p.payment_id_mp,
+			p.external_reference,
+			p.merchant_order_id,
+			p.estado_mp,
+			p.estado_detalle_mp,
+			p.plan_nombre,
+			p.monto_clp,
+			p.monto_neto,
+			p.fee_mp,
+			p.email_usuario,
+			p.nombre_usuario,
+			p.telefono_usuario,
+			p.tipo_pago,
+			p.metodo_pago,
+			p.cuotas,
+			p.ip_address,
+			p.user_agent,
+			p.metadata_extra,
+			p.fecha_pago,
+			p.fecha_creacion,
+			p.fecha_actualizacion
+		FROM pagos p
+		WHERE p.sesion_id = ?
+		LIMIT 1
+	`;
+
+	const rows = await query(sql, [sesionId]);
+
+	if (rows.length === 0) {
+		return null;
+	}
+
+	const pago = rows[0];
+
+	// Parsear metadata_extra si existe
+	if (pago.metadata_extra) {
+		try {
+			pago.metadata_extra = JSON.parse(pago.metadata_extra);
+		} catch (err) {
+			console.error('[DB] Error parseando metadata_extra:', err);
+			pago.metadata_extra = {};
+		}
+	}
+
+	return pago;
+}
+
+/**
+ * Actualizar estado de un pago
+ *
+ * @param {string} sesionId - ID de sesión único
+ * @param {string} estadoMp - Nuevo estado de Mercado Pago
+ * @param {string} estadoDetalleMp - Detalle del estado
+ * @param {object} datosAdicionales - Datos adicionales opcionales
+ * @returns {Promise<void>}
+ */
+export async function actualizarEstadoPago(sesionId, estadoMp, estadoDetalleMp, datosAdicionales = {}) {
+	const {
+		paymentIdMp = null,
+		tipoPago = null,
+		metodoPago = null,
+		cuotas = null,
+		montoNeto = null,
+		feeMp = null,
+		fechaPago = null
+	} = datosAdicionales;
+
+	// Si hay datos adicionales, actualizar todo
+	if (Object.keys(datosAdicionales).length > 0) {
+		const sql = `
+			UPDATE pagos
+			SET estado_mp = ?,
+			    estado_detalle_mp = ?,
+			    payment_id_mp = COALESCE(?, payment_id_mp),
+			    tipo_pago = COALESCE(?, tipo_pago),
+			    metodo_pago = COALESCE(?, metodo_pago),
+			    cuotas = COALESCE(?, cuotas),
+			    monto_neto = COALESCE(?, monto_neto),
+			    fee_mp = COALESCE(?, fee_mp),
+			    fecha_pago = COALESCE(?, fecha_pago),
+			    fecha_actualizacion = NOW()
+			WHERE sesion_id = ?
+		`;
+
+		await query(sql, [
+			estadoMp,
+			estadoDetalleMp,
+			paymentIdMp,
+			tipoPago,
+			metodoPago,
+			cuotas,
+			montoNeto,
+			feeMp,
+			fechaPago,
+			sesionId
+		]);
+	} else {
+		// Actualización simple de estado
+		const sql = `
+			UPDATE pagos
+			SET estado_mp = ?,
+			    estado_detalle_mp = ?,
+			    fecha_actualizacion = NOW()
+			WHERE sesion_id = ?
+		`;
+
+		await query(sql, [estadoMp, estadoDetalleMp, sesionId]);
+	}
+
+	console.log('[DB] Pago actualizado:', sesionId, '| Estado:', estadoMp, '| Detalle:', estadoDetalleMp);
+}
+
+/**
+ * Guardar preference_id al crear preferencia de pago
+ *
+ * @param {string} sesionId - ID de sesión único
+ * @param {string} preferenceId - ID de la preferencia de Mercado Pago
+ * @param {string} externalReference - Referencia externa opcional
+ * @returns {Promise<void>}
+ */
+export async function guardarPreferenceId(sesionId, preferenceId, externalReference = null) {
+	const sql = `
+		UPDATE pagos
+		SET preference_id = ?,
+		    external_reference = ?,
+		    fecha_actualizacion = NOW()
+		WHERE sesion_id = ?
+	`;
+
+	await query(sql, [preferenceId, externalReference, sesionId]);
+	console.log('[DB] Preference ID guardado:', sesionId, '| Preference:', preferenceId);
+}
+
+/**
+ * Listar pagos con filtros opcionales
+ *
+ * @param {object} filtros - Filtros opcionales
+ * @param {string} filtros.estado_mp - Filtrar por estado de MP
+ * @param {string} filtros.email_usuario - Filtrar por email
+ * @param {Date} filtros.desde - Fecha inicio
+ * @param {Date} filtros.hasta - Fecha fin
+ * @param {number} filtros.limit - Límite de resultados (default: 100)
+ * @param {number} filtros.offset - Offset para paginación (default: 0)
+ * @returns {Promise<Array>} Array de pagos
+ */
+export async function listarPagos(filtros = {}) {
+	const {
+		estado_mp = null,
+		email_usuario = null,
+		desde = null,
+		hasta = null,
+		limit = 100,
+		offset = 0
+	} = filtros;
+
+	let sql = `
+		SELECT
+			p.id,
+			p.sesion_id,
+			p.preference_id,
+			p.payment_id_mp,
+			p.estado_mp,
+			p.estado_detalle_mp,
+			p.plan_nombre,
+			p.monto_clp,
+			p.email_usuario,
+			p.nombre_usuario,
+			p.tipo_pago,
+			p.metodo_pago,
+			p.fecha_pago,
+			p.fecha_creacion
+		FROM pagos p
+		WHERE 1=1
+	`;
+
+	const params = [];
+
+	if (estado_mp) {
+		sql += ' AND p.estado_mp = ?';
+		params.push(estado_mp);
+	}
+
+	if (email_usuario) {
+		sql += ' AND p.email_usuario = ?';
+		params.push(email_usuario);
+	}
+
+	if (desde) {
+		sql += ' AND p.fecha_creacion >= ?';
+		params.push(desde);
+	}
+
+	if (hasta) {
+		sql += ' AND p.fecha_creacion <= ?';
+		params.push(hasta);
+	}
+
+	sql += ' ORDER BY p.fecha_creacion DESC';
+	sql += ' LIMIT ? OFFSET ?';
+	params.push(limit, offset);
+
+	const rows = await query(sql, params);
+
+	return rows;
+}
+
+/**
  * Cerrar pool de conexiones (para testing o shutdown)
  */
 export async function closePool() {
