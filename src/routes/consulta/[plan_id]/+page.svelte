@@ -26,6 +26,7 @@
 	let procesandoPago = $state(false);
 	let mpInstance: MercadoPago | null = null;
 	let mostrandoCheckout = $state(false);
+	let errorPregunta = $state<string | null>(null);
 
 	const precioFinal = $derived(plan?.precio_base || 0);
 
@@ -70,14 +71,76 @@
 		}).format(precio);
 	}
 
+	function validarPregunta(texto: string): { valida: boolean; error: string | null } {
+		const textoLimpio = texto.trim();
+
+		// Validación 1: Longitud mínima (al menos 10 caracteres)
+		if (textoLimpio.length < 10) {
+			return {
+				valida: false,
+				error: 'Tu pregunta debe tener al menos 10 caracteres para poder interpretarla adecuadamente'
+			};
+		}
+
+		// Validación 2: Longitud máxima
+		if (textoLimpio.length > 200) {
+			return {
+				valida: false,
+				error: 'Tu pregunta es demasiado larga. Por favor, sé más conciso (máximo 200 caracteres)'
+			};
+		}
+
+		// Validación 3: Verificar que no sea solo números o caracteres especiales
+		const soloNumerosOEspeciales = /^[0-9\s\.\,\!\?\-\_\+\=\@\#\$\%\^\&\*\(\)]+$/;
+		if (soloNumerosOEspeciales.test(textoLimpio)) {
+			return {
+				valida: false,
+				error: 'Por favor, escribe una pregunta con palabras que describan tu consulta'
+			};
+		}
+
+		// Validación 4: Verificar que tenga al menos algunas letras (mínimo 5 palabras con letras)
+		const palabras = textoLimpio.split(/\s+/).filter(palabra => /[a-záéíóúñü]/i.test(palabra));
+		if (palabras.length < 3) {
+			return {
+				valida: false,
+				error: 'Tu pregunta debe contener al menos 3 palabras para que podamos comprenderla'
+			};
+		}
+
+		// Validación 5: Verificar que no sea spam o texto repetitivo
+		const palabraRepetida = /(\b\w+\b)(\s+\1){3,}/i;
+		if (palabraRepetida.test(textoLimpio)) {
+			return {
+				valida: false,
+				error: 'Por favor, formula una pregunta coherente sin repetir las mismas palabras'
+			};
+		}
+
+		return { valida: true, error: null };
+	}
+
 	function continuar() {
-		if (!pregunta.trim()) {
-			alert('Por favor ingresa tu pregunta');
+		const validacion = validarPregunta(pregunta);
+
+		if (!validacion.valida) {
+			errorPregunta = validacion.error;
 			return;
 		}
 
+		errorPregunta = null;
 		pasoActual = 'seleccion_cartas';
 	}
+
+	// Limpiar error cuando el usuario escribe y cumple requisitos básicos
+	$effect(() => {
+		if (errorPregunta && pregunta.trim().length >= 10) {
+			const validacion = validarPregunta(pregunta);
+			if (validacion.valida) {
+				errorPregunta = null;
+			}
+		}
+	});
 
 	async function handleCartasSeleccionadas(cartas: CartaTarot[]) {
 		cartasSeleccionadas = cartas;
@@ -170,7 +233,7 @@
 <svelte:head>
 	<link rel="preconnect" href="https://fonts.googleapis.com">
 	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous">
-	<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&display=swap" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500&family=Philosopher:ital,wght@0,400;0,700;1,400;1,700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
 </svelte:head>
 
 <!-- Celestial Background -->
@@ -247,6 +310,13 @@
 							<span class="char-separator">/</span>
 							<span class="char-max">200</span>
 						</div>
+
+						{#if errorPregunta}
+							<div class="validation-whisper">
+								<span class="validation-icon">✦</span>
+								{errorPregunta}
+							</div>
+						{/if}
 
 						<button class="btn-mystical primary" onclick={continuar} disabled={!pregunta.trim()}>
 							<span class="btn-text">Pasa a la selección de tu fortuna</span>
@@ -337,10 +407,17 @@
 		--copper: #b87333;
 		--gold: #d4af37;
 		--stardust: #e8dcc4;
-		--whisper: rgba(232, 220, 196, 0.7);
+		--whisper: rgba(232, 220, 196, 0.85);
 
-		--font-display: 'Cinzel', serif;
-		--font-body: 'EB Garamond', serif;
+		--font-display: 'Philosopher', sans-serif;
+		--font-body: 'Cormorant Garamond', serif;
+		--font-accent: 'Spectral', serif;
+	}
+
+	* {
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		text-rendering: optimizeLegibility;
 	}
 
 	/* Celestial Background */
@@ -350,7 +427,12 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background: radial-gradient(ellipse at bottom, var(--deep-purple) 0%, var(--midnight) 100%);
+		background:
+			linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%),
+			url('/fondotarot.png');
+		background-size: cover;
+		background-position: center;
+		background-repeat: no-repeat;
 		overflow: hidden;
 		z-index: 0;
 	}
@@ -514,11 +596,13 @@
 	}
 
 	.orb-label {
-		font-family: var(--font-body);
-		font-size: 0.9rem;
+		font-family: var(--font-accent);
+		font-size: 0.875rem;
+		font-weight: 400;
 		font-style: italic;
 		color: var(--whisper);
-		letter-spacing: 0.05em;
+		letter-spacing: 0.08em;
+		text-transform: lowercase;
 	}
 
 	.progress-thread {
@@ -666,14 +750,19 @@
 
 	.seal-text {
 		font-family: var(--font-display);
-		font-size: 0.95rem;
-		letter-spacing: 0.15em;
+		font-size: 0.8125rem;
+		font-weight: 700;
+		letter-spacing: 0.2em;
 		text-transform: uppercase;
 		color: var(--gold);
-		padding: 0.5rem 1.5rem;
+		padding: 0.625rem 1.75rem;
 		border: 1px solid rgba(212, 175, 55, 0.4);
 		border-radius: 2rem;
 		background: rgba(212, 175, 55, 0.05);
+		text-shadow:
+			0 0 15px rgba(212, 175, 55, 0.8),
+			0 0 8px rgba(0, 0, 0, 0.9),
+			0 1px 3px rgba(0, 0, 0, 0.8);
 	}
 
 	/* Titles */
@@ -686,35 +775,52 @@
 
 	.title-line {
 		display: block;
-		font-family: var(--font-body);
-		font-size: clamp(1.5rem, 4vw, 2rem);
-		font-weight: 400;
+		font-family: var(--font-accent);
+		font-size: clamp(1.375rem, 3.5vw, 1.875rem);
+		font-weight: 300;
 		font-style: italic;
 		color: var(--whisper);
-		margin-bottom: 0.25rem;
+		margin-bottom: 0.5rem;
+		letter-spacing: 0.02em;
+		line-height: 1.3;
+		text-shadow:
+			0 0 15px rgba(0, 0, 0, 0.8),
+			0 2px 8px rgba(0, 0, 0, 0.6),
+			0 0 30px rgba(232, 220, 196, 0.3);
 	}
 
 	.title-emphasis {
 		display: block;
 		font-family: var(--font-display);
-		font-size: clamp(2.5rem, 6vw, 4rem);
-		font-weight: 600;
+		font-size: clamp(2.75rem, 7vw, 4.5rem);
+		font-weight: 700;
 		background: linear-gradient(135deg, var(--gold) 0%, var(--copper) 100%);
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
-		letter-spacing: 0.05em;
+		letter-spacing: 0.03em;
+		line-height: 1.1;
+		filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6))
+		        drop-shadow(0 0 40px rgba(184, 115, 51, 0.4))
+		        drop-shadow(0 2px 4px rgba(0, 0, 0, 0.8));
 	}
 
 	.ritual-whisper {
 		text-align: center;
 		font-family: var(--font-body);
-		font-size: 1.15rem;
+		font-size: 1.25rem;
+		font-weight: 400;
 		font-style: italic;
 		color: var(--whisper);
-		margin-bottom: 2rem;
+		margin-bottom: 2.5rem;
 		position: relative;
 		z-index: 1;
+		letter-spacing: 0.01em;
+		line-height: 1.6;
+		text-shadow:
+			0 0 10px rgba(0, 0, 0, 0.9),
+			0 2px 6px rgba(0, 0, 0, 0.7),
+			0 0 20px rgba(232, 220, 196, 0.2);
 	}
 
 	/* Inputs */
@@ -722,12 +828,17 @@
 		margin-top: 1.5rem;
 		display: flex;
 		align-items: center;
-		gap: 0.5rem;
-		margin-bottom: 0.75rem;
+		gap: 0.625rem;
+		margin-bottom: 0.875rem;
 		font-family: var(--font-display);
-		font-size: 1rem;
-		letter-spacing: 0.05em;
+		font-size: 0.9375rem;
+		font-weight: 400;
+		letter-spacing: 0.08em;
 		color: var(--stardust);
+		text-transform: lowercase;
+		text-shadow:
+			0 0 8px rgba(0, 0, 0, 0.9),
+			0 1px 4px rgba(0, 0, 0, 0.8);
 	}
 
 	.label-star {
@@ -751,16 +862,20 @@
 
 	.cosmic-input {
 		width: 100%;
-		padding: 1.25rem 1.5rem;
-		background: rgba(10, 14, 39, 0.5);
-		border: 1px solid rgba(184, 115, 51, 0.3);
+		padding: 1.375rem 1.625rem;
+		background: rgb(10, 14, 39);
+		border: 1px solid rgba(184, 115, 51, 0.6);
 		border-radius: 1rem;
 		color: var(--stardust);
 		font-family: var(--font-body);
-		font-size: 1.35rem;
-		line-height: 1.6;
+		font-size: 1.25rem;
+		font-weight: 400;
+		line-height: 1.75;
+		letter-spacing: 0.01em;
 		resize: none;
 		transition: all 0.3s ease;
+		text-shadow: 0 0 0 transparent;
+		caret-color: var(--gold);
 	}
 
 	.cosmic-input::placeholder {
@@ -771,25 +886,87 @@
 	.cosmic-input:focus {
 		outline: none;
 		border-color: var(--copper);
-		background: rgba(10, 14, 39, 0.7);
-		box-shadow: 0 0 30px rgba(184, 115, 51, 0.2);
+		background: rgb(10, 14, 39);
+		box-shadow: 0 0 30px rgba(184, 115, 51, 0.3);
+		text-shadow:
+			0 0 10px rgba(232, 220, 196, 0.3),
+			0 0 20px rgba(212, 175, 55, 0.2),
+			0 0 30px rgba(184, 115, 51, 0.1);
+		animation: text-glow 2s ease-in-out infinite;
+	}
+
+	@keyframes text-glow {
+		0%, 100% {
+			text-shadow:
+				0 0 8px rgba(232, 220, 196, 0.3),
+				0 0 16px rgba(212, 175, 55, 0.15),
+				0 0 24px rgba(184, 115, 51, 0.08);
+		}
+		50% {
+			text-shadow:
+				0 0 12px rgba(232, 220, 196, 0.4),
+				0 0 24px rgba(212, 175, 55, 0.25),
+				0 0 36px rgba(184, 115, 51, 0.15);
+		}
 	}
 
 	.character-constellation {
 		display: flex;
 		align-items: center;
 		justify-content: flex-end;
-		gap: 0.25rem;
-		margin-top: 0.5rem;
-		margin-bottom: 1.5rem;
-		font-family: var(--font-body);
-		font-size: 0.9rem;
+		gap: 0.375rem;
+		margin-top: 0.625rem;
+		margin-bottom: 1.75rem;
+		font-family: var(--font-accent);
+		font-size: 0.8125rem;
+		font-weight: 400;
+		font-style: italic;
 		color: var(--whisper);
-		opacity: 0.6;
+		opacity: 0.65;
+		letter-spacing: 0.02em;
 	}
 
 	.char-separator {
 		opacity: 0.4;
+	}
+
+	/* Validation Whisper */
+	.validation-whisper {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.75rem;
+		padding: 1.125rem 1.375rem;
+		margin-top: 1.125rem;
+		margin-bottom: 1.125rem;
+		background: rgba(184, 115, 51, 0.15);
+		border: 1px solid rgba(184, 115, 51, 0.4);
+		border-radius: 1rem;
+		font-family: var(--font-body);
+		font-size: 1rem;
+		font-weight: 400;
+		font-style: italic;
+		color: var(--gold);
+		line-height: 1.6;
+		letter-spacing: 0.01em;
+		animation: validation-appear 0.3s ease-out;
+	}
+
+	@keyframes validation-appear {
+		from {
+			opacity: 0;
+			transform: translateY(-10px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.validation-icon {
+		color: var(--copper);
+		font-size: 1rem;
+		flex-shrink: 0;
+		animation: twinkle-star 2s ease-in-out infinite;
 	}
 
 	/* Investment Display */
@@ -831,42 +1008,24 @@
 		justify-content: center;
 		gap: 1rem;
 		width: 100%;
-		padding: 1.5rem 2rem;
-		background: linear-gradient(135deg, var(--copper) 0%, rgba(184, 115, 51, 0.8) 100%);
+		padding: 1.375rem 2rem;
+		background: #b87333;
 		border: 1px solid var(--gold);
 		border-radius: 1rem;
 		color: var(--midnight);
 		font-family: var(--font-display);
-		font-size: 1.2rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
+		font-size: 1rem;
+		font-weight: 700;
+		letter-spacing: 0.12em;
 		text-transform: uppercase;
 		cursor: pointer;
 		position: relative;
 		z-index: 1;
-		overflow: hidden;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-	}
-
-	.btn-mystical::before {
-		content: '';
-		position: absolute;
-		top: 50%;
-		left: 50%;
-		width: 0;
-		height: 0;
-		background: radial-gradient(circle, rgba(212, 175, 55, 0.4), transparent);
-		transform: translate(-50%, -50%);
-		transition: width 0.6s ease, height 0.6s ease;
-		border-radius: 50%;
-	}
-
-	.btn-mystical:hover::before {
-		width: 300%;
-		height: 300%;
+		transition: all 0.3s ease;
 	}
 
 	.btn-mystical:hover {
+		background: #a86625;
 		transform: translateY(-3px);
 		box-shadow: 0 10px 40px rgba(184, 115, 51, 0.5);
 	}
@@ -992,17 +1151,21 @@
 
 	.summary-label {
 		font-family: var(--font-display);
-		font-size: 1rem;
-		letter-spacing: 0.05em;
+		font-size: 0.875rem;
+		font-weight: 400;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
 		color: var(--copper);
 		flex-shrink: 0;
 	}
 
 	.summary-value {
 		font-family: var(--font-body);
-		font-size: 1.1rem;
+		font-size: 1.125rem;
+		font-weight: 500;
 		color: var(--stardust);
 		text-align: right;
+		letter-spacing: 0.01em;
 	}
 
 	.summary-value.question,

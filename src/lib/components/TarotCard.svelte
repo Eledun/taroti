@@ -59,6 +59,7 @@
 		perspective: 1000px;
 		cursor: pointer;
 		background: none;
+		border: none;
 		padding: 0;
 		transition: all var(--transition-base);
 	}
@@ -87,7 +88,7 @@
 
 	/* Hover en cartas seleccionadas y reveladas: zoom grande */
 	.tarot-card.selected.revealed:hover .card-inner {
-		transform: rotateY(180deg) scale(1.3);
+		transform: scale(1.3);
 		z-index: 100;
 	}
 
@@ -99,13 +100,13 @@
 		transform: rotate(180deg);
 	}
 
-	/* Efecto flip cuando la carta está revelada */
+	/* Sin efecto flip en cartas reveladas */
 	.tarot-card.revealed .card-inner {
-		transform: rotateY(180deg);
+		transform: none;
 	}
 
 	.tarot-card.revealed.invertida .card-inner {
-		transform: rotateY(180deg) rotate(180deg);
+		transform: rotate(180deg);
 	}
 
 	.card-back,
@@ -113,18 +114,23 @@
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		backface-visibility: hidden;
-		border-radius: var(--radius-lg);
+		border-radius: 0;
+		border: none;
 		overflow: hidden;
-		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		box-shadow: none;
 	}
 
 	.card-back {
-		transform: rotateY(0deg);
+		display: block;
 	}
 
 	.card-front {
-		transform: rotateY(180deg);
+		display: block;
+	}
+
+	/* Ocultar el reverso cuando está revelada */
+	.tarot-card.revealed .card-back {
+		display: none;
 	}
 
 	.card-image {

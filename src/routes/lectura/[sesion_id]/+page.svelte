@@ -5,6 +5,7 @@
 	import { browser } from '$app/environment';
 	import { onMount } from 'svelte';
 	import { invalidate } from '$app/navigation';
+	import TarotCard from '$lib/components/TarotCard.svelte';
 
 	let { data }: { data: PageData } = $props();
 	const lectura = $derived(data.lectura);
@@ -93,7 +94,87 @@
 
 	// Mapping de nombres de cartas del tarot
 	const nombresCarta: Record<string, string> = {
-		// Arcanos Mayores
+		// Arcanos Mayores (formato nuevo - numérico)
+		'0': 'El Loco',
+		'1': 'El Mago',
+		'2': 'La Sacerdotisa',
+		'3': 'La Emperatriz',
+		'4': 'El Emperador',
+		'5': 'El Hierofante',
+		'6': 'Los Enamorados',
+		'7': 'El Carro',
+		'8': 'La Fuerza',
+		'9': 'El Ermitaño',
+		'10': 'La Rueda de la Fortuna',
+		'11': 'La Justicia',
+		'12': 'El Colgado',
+		'13': 'La Muerte',
+		'14': 'La Templanza',
+		'15': 'El Diablo',
+		'16': 'La Torre',
+		'17': 'La Estrella',
+		'18': 'La Luna',
+		'19': 'El Sol',
+		'20': 'El Juicio',
+		'21': 'El Mundo',
+		// Arcanos Menores (formato nuevo - numérico)
+		'22': 'As de Bastos',
+		'23': 'Dos de Bastos',
+		'24': 'Tres de Bastos',
+		'25': 'Cuatro de Bastos',
+		'26': 'Cinco de Bastos',
+		'27': 'Seis de Bastos',
+		'28': 'Siete de Bastos',
+		'29': 'Ocho de Bastos',
+		'30': 'Nueve de Bastos',
+		'31': 'Diez de Bastos',
+		'32': 'Sota de Bastos',
+		'33': 'Caballero de Bastos',
+		'34': 'Reina de Bastos',
+		'35': 'Rey de Bastos',
+		'36': 'As de Copas',
+		'37': 'Dos de Copas',
+		'38': 'Tres de Copas',
+		'39': 'Cuatro de Copas',
+		'40': 'Cinco de Copas',
+		'41': 'Seis de Copas',
+		'42': 'Siete de Copas',
+		'43': 'Ocho de Copas',
+		'44': 'Nueve de Copas',
+		'45': 'Diez de Copas',
+		'46': 'Sota de Copas',
+		'47': 'Caballero de Copas',
+		'48': 'Reina de Copas',
+		'49': 'Rey de Copas',
+		'50': 'As de Espadas',
+		'51': 'Dos de Espadas',
+		'52': 'Tres de Espadas',
+		'53': 'Cuatro de Espadas',
+		'54': 'Cinco de Espadas',
+		'55': 'Seis de Espadas',
+		'56': 'Siete de Espadas',
+		'57': 'Ocho de Espadas',
+		'58': 'Nueve de Espadas',
+		'59': 'Diez de Espadas',
+		'60': 'Sota de Espadas',
+		'61': 'Caballero de Espadas',
+		'62': 'Reina de Espadas',
+		'63': 'Rey de Espadas',
+		'64': 'As de Oros',
+		'65': 'Dos de Oros',
+		'66': 'Tres de Oros',
+		'67': 'Cuatro de Oros',
+		'68': 'Cinco de Oros',
+		'69': 'Seis de Oros',
+		'70': 'Siete de Oros',
+		'71': 'Ocho de Oros',
+		'72': 'Nueve de Oros',
+		'73': 'Diez de Oros',
+		'74': 'Sota de Oros',
+		'75': 'Caballero de Oros',
+		'76': 'Reina de Oros',
+		'77': 'Rey de Oros',
+		// Formato antiguo (backward compatibility)
 		carta_0: 'El Loco',
 		carta_1: 'El Mago',
 		carta_2: 'La Sacerdotisa',
@@ -116,7 +197,6 @@
 		carta_19: 'El Sol',
 		carta_20: 'El Juicio',
 		carta_21: 'El Mundo',
-		// Arcanos Menores (simplificado)
 		carta_22: 'As de Bastos',
 		carta_23: 'Dos de Bastos',
 		carta_24: 'Tres de Bastos',
@@ -176,6 +256,7 @@
 	};
 
 	function obtenerNombreCarta(arcano: string): string {
+		console.log('[DEBUG obtenerNombreCarta] arcano recibido:', arcano, '| nombre:', nombresCarta[arcano]);
 		return nombresCarta[arcano] || arcano;
 	}
 
@@ -250,11 +331,7 @@
 					{#each lectura.cartas as carta, i}
 						<div class="carta-item" style="animation-delay: {i * 0.15}s">
 							<div class="carta-visual" class:invertida={carta.invertida}>
-								<div class="carta-pattern">
-									<div class="pattern-circle"></div>
-									<div class="pattern-star">✦</div>
-									<div class="pattern-moon">☽</div>
-								</div>
+								<TarotCard cardIndex={parseInt(carta.arcano)} revealed={true} invertida={carta.invertida} />
 							</div>
 							<div class="carta-info">
 								<h3 class="carta-nombre">
@@ -328,7 +405,11 @@
 		background:
 			radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
 			radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.06) 0%, transparent 50%),
-			linear-gradient(180deg, rgba(26, 20, 51, 0.4) 0%, transparent 100%);
+			linear-gradient(180deg, rgba(26, 20, 51, 0.7) 0%, rgba(10, 14, 39, 0.85) 100%),
+			url('/zodiacofondo.png');
+		background-size: auto, auto, auto, cover;
+		background-position: 20% 30%, 80% 70%, top, center;
+		background-repeat: no-repeat;
 		position: relative;
 		overflow: hidden;
 	}
@@ -501,54 +582,14 @@
 	}
 
 	.carta-visual {
-		width: 160px;
-		height: 240px;
-		background: linear-gradient(135deg, #1a1433, #2d1b69, #1a1433);
-		border: 2px solid rgba(139, 92, 246, 0.5);
-		border-radius: var(--radius-lg);
+		width: 150px;
+		height: 250px;
 		position: relative;
-		overflow: hidden;
-		box-shadow:
-			0 10px 30px rgba(139, 92, 246, 0.4),
-			0 4px 12px rgba(0, 0, 0, 0.5),
-			inset 0 1px 0 rgba(255, 255, 255, 0.15);
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
-	.carta-visual::before {
-		content: '';
-		position: absolute;
-		inset: 0;
-		background: linear-gradient(
-			45deg,
-			transparent 30%,
-			rgba(139, 92, 246, 0.15) 50%,
-			transparent 70%
-		);
-		opacity: 0;
-		transition: opacity 0.4s ease;
-	}
-
-	.carta-visual:hover {
-		transform: translateY(-4px) scale(1.02);
-		box-shadow:
-			0 15px 40px rgba(139, 92, 246, 0.5),
-			0 6px 16px rgba(0, 0, 0, 0.4),
-			inset 0 1px 0 rgba(255, 255, 255, 0.2);
-		border-color: rgba(139, 92, 246, 0.7);
-	}
-
-	.carta-visual:hover::before {
-		opacity: 1;
-	}
-
-	.carta-visual.invertida {
-		transform: rotate(180deg);
-	}
-
-	.carta-visual.invertida:hover {
-		transform: rotate(180deg) translateY(-4px) scale(1.02);
-	}
 
 	.carta-pattern {
 		width: 100%;
@@ -790,18 +831,16 @@
 	}
 
 	.carta-visual {
-		width: 140px;
-		height: 210px;
-		background: linear-gradient(135deg, #1a1433, #2d1b69, #1a1433);
-		border: 2px solid rgba(139, 92, 246, 0.4);
-		border-radius: var(--radius-lg);
+		width: 150px;
+		height: 250px;
 		position: relative;
-		overflow: hidden;
-		box-shadow:
-			0 10px 30px rgba(139, 92, 246, 0.3),
-			0 4px 12px rgba(0, 0, 0, 0.4),
-			inset 0 1px 0 rgba(255, 255, 255, 0.1);
+		overflow: visible;
 		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		cursor: pointer;
+		z-index: 1;
 	}
 
 	.carta-visual::before {
@@ -819,12 +858,9 @@
 	}
 
 	.carta-visual:hover {
-		transform: translateY(-8px) scale(1.02);
-		box-shadow:
-			0 20px 40px rgba(139, 92, 246, 0.4),
-			0 8px 16px rgba(0, 0, 0, 0.3),
-			inset 0 1px 0 rgba(255, 255, 255, 0.15);
-		border-color: rgba(139, 92, 246, 0.6);
+		transform: scale(2.5);
+		z-index: 100;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
 	}
 
 	.carta-visual:hover::before {
@@ -836,7 +872,16 @@
 	}
 
 	.carta-visual.invertida:hover {
-		transform: rotate(180deg) translateY(-8px) scale(1.02);
+		transform: rotate(180deg) scale(2.5);
+		z-index: 100;
+		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+	}
+
+	/* Forzar tamaño uniforme para todas las imágenes de cartas */
+	.carta-visual :global(img) {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
 	}
 
 	.carta-pattern {
@@ -995,6 +1040,7 @@
 		max-width: 75ch;
 		margin: 0 auto;
 		position: relative;
+		padding-right: 100px;
 	}
 
 	.interpretacion-texto::first-letter {
@@ -1062,6 +1108,7 @@
 	.interpretacion-texto :global(p) {
 		margin-bottom: var(--spacing-md);
 		line-height: 1.8;
+		text-align: justify;
 	}
 
 	.interpretacion-texto :global(strong) {
