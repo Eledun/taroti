@@ -7,6 +7,38 @@ Este archivo registra todos los cambios del proyecto Taroti LATAM.
 
 ---
 
+## [2.3.10] - 2026-06-04
+
+### 🎨 UI/UX Fixes - Card Display & Mobile Experience
+
+#### Fixed
+
+**Card Backcover Display Issue**
+- **Archivo:** `src/lib/components/TarotCard.svelte`
+- **Problema:** Los bordes decorativos del backcover de las cartas aparecían recortados ("mordidos")
+- **Causa:** `object-fit: cover` estaba croppeando la imagen para llenar el espacio
+- **Solución:**
+  - Cambiado `object-fit: cover` → `object-fit: contain` (línea 142)
+  - Cambiado `overflow: hidden` → `overflow: visible` (línea 119)
+  - Agregado flexbox centering para mejor alineación (líneas 121-123)
+- **Impacto:** ✅ Backcover se muestra completo con todos sus bordes decorativos
+
+**Mobile Parallax Scrolling Issues**
+- **Archivo:** `src/routes/+page.svelte`
+- **Problema:** Efecto parallax no funcionaba correctamente en dispositivos móviles, especialmente iOS Safari
+- **Causa:** `background-attachment: fixed` no es compatible con móviles iOS
+- **Solución:**
+  - Desactivado `background-attachment: fixed` en mobile (línea 936)
+  - Cambiado a `background-attachment: scroll` para scroll fluido
+  - Desactivado sticky positioning en mobile (líneas 941-949)
+  - Ajustado `background-position: center center` (línea 938)
+- **Impacto:**
+  - ✅ Scroll fluido y natural en dispositivos móviles
+  - ✅ Compatible con iOS Safari
+  - ✅ Mejor rendimiento en mobile
+
+---
+
 ## [2.3.3] - 2026-05-26
 
 ### 🐛 CRITICAL FIX - Card Display & Card Name Issues Resolved
