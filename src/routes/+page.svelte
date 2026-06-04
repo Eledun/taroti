@@ -227,19 +227,7 @@
 	}
 
 	.hero-overlay {
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: linear-gradient(
-			to bottom,
-			rgba(26, 40, 68, 0.85) 0%,
-			rgba(26, 40, 68, 0.75) 50%,
-			rgba(26, 40, 68, 0.9) 100%
-		);
-		z-index: 0;
-		transition: opacity 0.3s ease;
+		display: none;
 	}
 
 	.hero-content {
@@ -335,20 +323,7 @@
 	}
 
 	.planes-section::before {
-		content: '';
-		position: absolute;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: linear-gradient(
-			to bottom,
-			rgba(26, 40, 68, 0.85) 0%,
-			rgba(26, 40, 68, 0.75) 50%,
-			rgba(26, 40, 68, 0.9) 100%
-		);
-		z-index: 0;
-		transition: opacity 0.3s ease;
+		display: none;
 	}
 
 	.planes-container {
@@ -383,16 +358,7 @@
 		font-size: clamp(2.5rem, 6vw, 3.5rem);
 		font-weight: 700;
 		letter-spacing: 0.02em;
-		background: linear-gradient(135deg,
-			var(--color-primary) 0%,
-			var(--color-primary-light) 30%,
-			var(--color-secondary) 60%,
-			var(--color-accent) 100%);
-		background-size: 200% 200%;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		animation: gradientFlow 8s ease infinite;
+		color: white;
 		filter: drop-shadow(0 2px 10px rgba(212, 175, 55, 0.3))
 		        drop-shadow(0 4px 20px rgba(139, 92, 246, 0.2));
 		text-transform: uppercase;
@@ -483,9 +449,10 @@
 		position: relative;
 		width: 100%;
 		height: 100%;
-		transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
 		transform-style: preserve-3d;
 		border-radius: 1.5rem;
+		will-change: transform;
 	}
 
 	.plan-card-container:hover .plan-card-inner {
@@ -500,8 +467,8 @@
 		height: 100%;
 		backface-visibility: hidden;
 		border-radius: 1.5rem;
-		backdrop-filter: blur(10px);
 		overflow: hidden;
+		transition: box-shadow 0.3s ease, border-color 0.3s ease;
 	}
 
 	.plan-card-front {
@@ -602,25 +569,9 @@
 	/* Tarjeta 1 - Luna (Plateado/Rosa Místico) */
 	.plan-card-1 .plan-card-front,
 	.plan-card-1 .plan-card-back {
-		background: rgba(30, 41, 59, 0.4);
-		backdrop-filter: blur(20px) saturate(180%);
-		-webkit-backdrop-filter: blur(20px) saturate(180%);
-		border: 2px solid transparent;
-		background-image:
-			linear-gradient(rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.6)),
-			linear-gradient(135deg,
-				rgba(236, 72, 153, 0.4) 0%,
-				rgba(244, 114, 182, 0.6) 25%,
-				rgba(236, 72, 153, 0.4) 50%,
-				rgba(244, 114, 182, 0.6) 75%,
-				rgba(236, 72, 153, 0.4) 100%);
-		background-origin: border-box;
-		background-clip: padding-box, border-box;
-		box-shadow:
-			0 8px 32px 0 rgba(236, 72, 153, 0.37),
-			0 0 60px rgba(236, 72, 153, 0.15),
-			inset 0 2px 4px rgba(255, 255, 255, 0.1),
-			inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+		background: rgba(30, 41, 59, 0.85);
+		border: 2px solid rgba(236, 72, 153, 0.5);
+		box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.4);
 	}
 
 	.plan-card-1 .plan-icon {
@@ -635,64 +586,22 @@
 
 	.plan-card-2 .plan-card-front,
 	.plan-card-2 .plan-card-back {
-		background: rgba(30, 41, 59, 0.4);
-		backdrop-filter: blur(20px) saturate(180%);
-		-webkit-backdrop-filter: blur(20px) saturate(180%);
-		border: 2px solid transparent;
-		background-image:
-			linear-gradient(rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.6)),
-			linear-gradient(135deg,
-				rgba(212, 175, 55, 0.6) 0%,
-				rgba(230, 197, 89, 0.8) 25%,
-				rgba(212, 175, 55, 0.6) 50%,
-				rgba(230, 197, 89, 0.8) 75%,
-				rgba(212, 175, 55, 0.6) 100%);
-		background-origin: border-box;
-		background-clip: padding-box, border-box;
-		box-shadow:
-			0 8px 32px 0 rgba(212, 175, 55, 0.4),
-			0 0 60px rgba(212, 175, 55, 0.2),
-			inset 0 2px 4px rgba(255, 255, 255, 0.15),
-			inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+		background: rgba(30, 41, 59, 0.85);
+		border: 2px solid rgba(212, 175, 55, 0.6);
+		box-shadow: 0 8px 32px 0 rgba(212, 175, 55, 0.5);
 	}
 
 	.plan-card-2 .plan-icon {
 		color: #d4af37;
-		animation: sunGlow 3s ease-in-out infinite;
 		filter: drop-shadow(0 0 20px rgba(212, 175, 55, 0.6));
-	}
-
-	@keyframes sunGlow {
-		0%, 100% {
-			filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.5));
-		}
-		50% {
-			filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.9));
-		}
 	}
 
 	/* Tarjeta 3 - Estrella (Púrpura Mágico) */
 	.plan-card-3 .plan-card-front,
 	.plan-card-3 .plan-card-back {
-		background: rgba(30, 41, 59, 0.4);
-		backdrop-filter: blur(20px) saturate(180%);
-		-webkit-backdrop-filter: blur(20px) saturate(180%);
-		border: 2px solid transparent;
-		background-image:
-			linear-gradient(rgba(30, 41, 59, 0.6), rgba(30, 41, 59, 0.6)),
-			linear-gradient(135deg,
-				rgba(139, 92, 246, 0.5) 0%,
-				rgba(167, 139, 250, 0.7) 25%,
-				rgba(139, 92, 246, 0.5) 50%,
-				rgba(167, 139, 250, 0.7) 75%,
-				rgba(139, 92, 246, 0.5) 100%);
-		background-origin: border-box;
-		background-clip: padding-box, border-box;
-		box-shadow:
-			0 8px 32px 0 rgba(139, 92, 246, 0.37),
-			0 0 60px rgba(139, 92, 246, 0.15),
-			inset 0 2px 4px rgba(255, 255, 255, 0.1),
-			inset 0 -2px 4px rgba(0, 0, 0, 0.1);
+		background: rgba(30, 41, 59, 0.85);
+		border: 2px solid rgba(139, 92, 246, 0.5);
+		box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.4);
 	}
 
 	.plan-card-3 .plan-icon {
@@ -715,59 +624,30 @@
 		letter-spacing: 0.05em;
 		box-shadow: 0 4px 15px rgba(212, 175, 55, 0.5);
 		z-index: 10;
-		animation: badgePulse 2s ease-in-out infinite;
-	}
-
-	@keyframes badgePulse {
-		0%, 100% {
-			transform: scale(1);
-		}
-		50% {
-			transform: scale(1.05);
-		}
 	}
 
 	/* Iconos */
 	.plan-icon {
 		text-align: center;
 		margin-bottom: var(--spacing-md);
-		animation: iconFloat 4s ease-in-out infinite;
-	}
-
-	@keyframes iconFloat {
-		0%, 100% {
-			transform: translateY(0);
-		}
-		50% {
-			transform: translateY(-10px);
-		}
 	}
 
 	.plan-card-container:hover .plan-card-1 .plan-card-front,
 	.plan-card-container:hover .plan-card-1 .plan-card-back {
-		box-shadow:
-			0 20px 60px rgba(236, 72, 153, 0.5),
-			0 0 80px rgba(236, 72, 153, 0.3),
-			inset 0 1px 0 rgba(244, 114, 182, 0.4),
-			inset 0 -1px 0 rgba(236, 72, 153, 0.3);
+		box-shadow: 0 16px 48px rgba(236, 72, 153, 0.6);
+		border-color: rgba(236, 72, 153, 0.8);
 	}
 
 	.plan-card-container:hover .plan-card-2 .plan-card-front,
 	.plan-card-container:hover .plan-card-2 .plan-card-back {
-		box-shadow:
-			0 20px 60px rgba(212, 175, 55, 0.6),
-			0 0 80px rgba(212, 175, 55, 0.4),
-			inset 0 1px 0 rgba(230, 197, 89, 0.5),
-			inset 0 -1px 0 rgba(212, 175, 55, 0.4);
+		box-shadow: 0 16px 48px rgba(212, 175, 55, 0.7);
+		border-color: rgba(212, 175, 55, 0.9);
 	}
 
 	.plan-card-container:hover .plan-card-3 .plan-card-front,
 	.plan-card-container:hover .plan-card-3 .plan-card-back {
-		box-shadow:
-			0 20px 60px rgba(139, 92, 246, 0.5),
-			0 0 80px rgba(139, 92, 246, 0.3),
-			inset 0 1px 0 rgba(167, 139, 250, 0.4),
-			inset 0 -1px 0 rgba(139, 92, 246, 0.3);
+		box-shadow: 0 16px 48px rgba(139, 92, 246, 0.6);
+		border-color: rgba(139, 92, 246, 0.8);
 	}
 
 	.plan-header {
@@ -881,23 +761,12 @@
 		font-weight: 800;
 		background: linear-gradient(135deg,
 			#ffd700 0%,
-			var(--color-primary-light) 20%,
-			var(--color-primary) 40%,
-			var(--color-primary-light) 60%,
-			#ffd700 80%,
+			var(--color-primary-light) 50%,
 			var(--color-primary) 100%);
-		background-size: 300% 300%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
-		animation: priceShine 4s ease-in-out infinite;
-		filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.7))
-		        drop-shadow(0 4px 20px rgba(212, 175, 55, 0.4))
-		        drop-shadow(0 0 30px rgba(255, 215, 0, 0.3));
-		text-shadow:
-			0 0 20px rgba(212, 175, 55, 0.5),
-			0 0 40px rgba(212, 175, 55, 0.3),
-			0 0 60px rgba(255, 215, 0, 0.2);
+		filter: drop-shadow(0 0 12px rgba(212, 175, 55, 0.6));
 	}
 
 	.precio-moneda {
@@ -908,21 +777,10 @@
 			#ffd700 0%,
 			var(--color-primary-light) 50%,
 			var(--color-primary) 100%);
-		background-size: 200% 200%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
-		animation: priceShine 4s ease-in-out infinite;
 		opacity: 0.9;
-	}
-
-	@keyframes priceShine {
-		0%, 100% {
-			background-position: 0% 50%;
-		}
-		50% {
-			background-position: 100% 50%;
-		}
 	}
 
 	.btn-seleccionar {
@@ -1057,12 +915,7 @@
 		}
 
 		.hero-overlay {
-			background: linear-gradient(
-				to bottom,
-				rgba(26, 40, 68, 0.9) 0%,
-				rgba(26, 40, 68, 0.85) 50%,
-				rgba(26, 40, 68, 0.95) 100%
-			);
+			display: none;
 		}
 
 		.hero-content {
@@ -1080,6 +933,19 @@
 		.planes-section {
 			margin-top: 100vh;
 			min-height: auto;
+			background-attachment: scroll;
+			background-size: cover;
+			background-position: center center;
+		}
+
+		.planes-container {
+			position: relative;
+			min-height: auto;
+			max-height: none;
+		}
+
+		.planes-container.sticky {
+			position: relative;
 		}
 
 		.planes-grid {

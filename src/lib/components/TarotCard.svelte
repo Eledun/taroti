@@ -116,8 +116,11 @@
 		height: 100%;
 		border-radius: 0;
 		border: none;
-		overflow: hidden;
+		overflow: visible;
 		box-shadow: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
 	}
 
 	.card-back {
@@ -136,7 +139,7 @@
 	.card-image {
 		width: 100%;
 		height: 100%;
-		object-fit: cover;
+		object-fit: contain;
 		display: block;
 	}
 
