@@ -83,12 +83,18 @@
 		return { principal, consejo };
 	});
 
+	// Función para estilizar el nombre "Mikahela"
+	function estilizarMikahela(html: string): string {
+		// Buscar "Mikahela" con o sin puntuación después
+		return html.replace(/\bMikahela\b([.,;:]?)/gi, '<span class="mikahela-signature">Mikahela</span>$1');
+	}
+
 	// Convertir markdown a HTML
 	const interpretacionHTML = $derived(() => {
 		const contenido = contenidoSeparado();
 		return {
-			principal: marked.parse(contenido.principal) as string,
-			consejo: marked.parse(contenido.consejo) as string
+			principal: estilizarMikahela(marked.parse(contenido.principal) as string),
+			consejo: estilizarMikahela(marked.parse(contenido.consejo) as string)
 		};
 	});
 
@@ -289,6 +295,9 @@
 
 <svelte:head>
 	<title>Tu Lectura de Tarot - Taroti</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&display=swap" rel="stylesheet">
 </svelte:head>
 
 {#if esperandoPago}
@@ -385,15 +394,12 @@
 			</a>
 		</div>
 
-		<!-- Advertencia de expiración -->
-		{#if lectura.expira_en}
-			<div class="expiracion-info">
-				<p>
-					Esta lectura estará disponible hasta el{' '}
-					{formatearFecha(lectura.expira_en)}
-				</p>
-			</div>
-		{/if}
+		<!-- Advertencia de lectura -->
+		<div class="expiracion-info">
+			<p>
+				✧ Reflexiona sobre tu lectura con calma. Una vez cerrada esta ventana, no estará disponible. ✧
+			</p>
+		</div>
 	</div>
 </div>
 {/if}
@@ -402,13 +408,9 @@
 	.lectura-container {
 		min-height: calc(100vh - 200px);
 		padding: var(--spacing-xl) 0;
-		background:
-			radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.08) 0%, transparent 50%),
-			radial-gradient(circle at 80% 70%, rgba(245, 158, 11, 0.06) 0%, transparent 50%),
-			linear-gradient(180deg, rgba(26, 20, 51, 0.7) 0%, rgba(10, 14, 39, 0.85) 100%),
-			url('/zodiacofondo.png');
-		background-size: auto, auto, auto, cover;
-		background-position: 20% 30%, 80% 70%, top, center;
+		background: url('/zodiacofondo.png');
+		background-size: cover;
+		background-position: center;
 		background-repeat: no-repeat;
 		position: relative;
 		overflow: hidden;
@@ -434,8 +436,8 @@
 
 	.lectura-header {
 		text-align: center;
-		margin-bottom: var(--spacing-xxl);
-		padding: var(--spacing-xl) 0;
+		margin-bottom: var(--spacing-xs);
+		padding: var(--spacing-xs) 0;
 		position: relative;
 	}
 
@@ -1560,7 +1562,10 @@
 		justify-content: center;
 		gap: var(--spacing-md);
 		flex-wrap: wrap;
+		margin-top: calc(var(--spacing-xxl) * 2.5);
 		margin-bottom: var(--spacing-xl);
+		padding-top: var(--spacing-xxl);
+		border-top: 1px solid rgba(139, 92, 246, 0.15);
 	}
 
 	.btn-compartir,
@@ -1624,36 +1629,95 @@
 	}
 
 	.btn-nueva {
-		background: linear-gradient(135deg, var(--color-secondary), #d97706);
+		background: linear-gradient(
+			135deg,
+			rgba(139, 92, 246, 0.9) 0%,
+			rgba(168, 85, 247, 0.85) 50%,
+			rgba(139, 92, 246, 0.9) 100%
+		);
 		color: white;
-		box-shadow: 0 4px 16px rgba(245, 158, 11, 0.3);
+		box-shadow:
+			0 8px 32px rgba(139, 92, 246, 0.4),
+			0 0 60px rgba(139, 92, 246, 0.2),
+			inset 0 1px 0 rgba(255, 255, 255, 0.2);
 		position: relative;
 		overflow: hidden;
+		padding: 1.25rem 3rem;
+		margin-top: var(--spacing-lg);
+		font-size: 1.125rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		border: 2px solid rgba(168, 85, 247, 0.5);
+		backdrop-filter: blur(20px);
+		font-family: Georgia, serif;
 	}
 
 	.btn-nueva::before {
 		content: '';
 		position: absolute;
-		top: 0;
-		left: -100%;
-		width: 100%;
-		height: 100%;
+		inset: -2px;
 		background: linear-gradient(
-			90deg,
-			transparent,
-			rgba(255, 255, 255, 0.2),
-			transparent
+			45deg,
+			transparent 30%,
+			rgba(255, 255, 255, 0.3) 50%,
+			transparent 70%
 		);
-		transition: left 0.5s ease;
+		transform: translateX(-100%) rotate(10deg);
+		transition: transform 0.6s ease;
+	}
+
+	.btn-nueva::after {
+		content: '✦';
+		position: absolute;
+		left: 1.5rem;
+		top: 50%;
+		transform: translateY(-50%);
+		font-size: 1.5rem;
+		opacity: 0.6;
+		animation: pulseGlow 2s ease-in-out infinite;
+	}
+
+	@keyframes pulseGlow {
+		0%, 100% {
+			opacity: 0.6;
+			text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+		}
+		50% {
+			opacity: 1;
+			text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+		}
 	}
 
 	.btn-nueva:hover {
-		transform: translateY(-2px);
-		box-shadow: 0 6px 24px rgba(245, 158, 11, 0.5);
+		transform: translateY(-4px) scale(1.02);
+		box-shadow:
+			0 12px 48px rgba(139, 92, 246, 0.6),
+			0 0 80px rgba(168, 85, 247, 0.4),
+			inset 0 1px 0 rgba(255, 255, 255, 0.3);
+		border-color: rgba(168, 85, 247, 0.8);
+		text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
 	}
 
 	.btn-nueva:hover::before {
-		left: 100%;
+		transform: translateX(100%) rotate(10deg);
+	}
+
+	.btn-nueva:hover::after {
+		animation: rotateSparkle 0.6s ease-in-out infinite;
+	}
+
+	@keyframes rotateSparkle {
+		0%, 100% {
+			transform: translateY(-50%) rotate(0deg) scale(1);
+		}
+		50% {
+			transform: translateY(-50%) rotate(180deg) scale(1.2);
+		}
+	}
+
+	.btn-nueva:active {
+		transform: translateY(-2px) scale(1);
 	}
 
 	.btn-icon {
@@ -1711,5 +1775,100 @@
 		font-size: 0.875rem;
 		color: var(--color-text-light);
 		margin-top: 1rem;
+	}
+
+	/* Centrar párrafos que contengan la firma de Mikahela */
+	.interpretacion-texto :global(p:has(.mikahela-signature)),
+	.consejo-contenido :global(p:has(.mikahela-signature)) {
+		text-align: center !important;
+		margin-top: var(--spacing-xl);
+		margin-bottom: var(--spacing-lg);
+	}
+
+	/* Estilo especial para la firma de Mikahela */
+	.interpretacion-texto :global(.mikahela-signature),
+	.consejo-contenido :global(.mikahela-signature) {
+		font-family: 'Dancing Script', cursive;
+		font-size: 1.6em;
+		font-weight: 700;
+		color: #a855f7;
+		display: inline-block;
+		position: relative;
+		padding: 0 0.3em;
+		text-shadow:
+			0 1px 2px rgba(139, 92, 246, 0.3),
+			0 0 15px rgba(168, 85, 247, 0.2);
+		filter: drop-shadow(0 1px 2px rgba(139, 92, 246, 0.15));
+		letter-spacing: 0.02em;
+		line-height: 1.4;
+	}
+
+	.interpretacion-texto :global(.mikahela-signature)::before {
+		content: '';
+		position: absolute;
+		bottom: -2px;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			#a855f7 20%,
+			#c084fc 50%,
+			#a855f7 80%,
+			transparent
+		);
+		opacity: 0.5;
+		border-radius: 2px;
+	}
+
+	.consejo-contenido :global(.mikahela-signature)::before {
+		content: '';
+		position: absolute;
+		bottom: -2px;
+		left: 0;
+		right: 0;
+		height: 2px;
+		background: linear-gradient(
+			90deg,
+			transparent,
+			#DAA520 20%,
+			#FFD700 50%,
+			#DAA520 80%,
+			transparent
+		);
+		opacity: 0.6;
+		border-radius: 2px;
+	}
+
+	.interpretacion-texto :global(.mikahela-signature)::after,
+	.consejo-contenido :global(.mikahela-signature)::after {
+		content: '✨';
+		position: absolute;
+		right: -0.6em;
+		top: -0.2em;
+		font-size: 0.55em;
+		opacity: 0.7;
+		animation: sparkleFloat 3s ease-in-out infinite;
+	}
+
+	/* Color dorado para Mikahela en el consejo final */
+	.consejo-contenido :global(.mikahela-signature) {
+		color: #FFD700;
+		text-shadow:
+			0 1px 2px rgba(218, 165, 32, 0.4),
+			0 0 15px rgba(255, 215, 0, 0.25);
+		filter: drop-shadow(0 1px 2px rgba(218, 165, 32, 0.2));
+	}
+
+	@keyframes sparkleFloat {
+		0%, 100% {
+			transform: translateY(0px) scale(1);
+			opacity: 0.6;
+		}
+		50% {
+			transform: translateY(-2px) scale(1.1);
+			opacity: 0.9;
+		}
 	}
 </style>

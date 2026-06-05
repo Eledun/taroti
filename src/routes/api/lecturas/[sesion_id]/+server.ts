@@ -7,10 +7,23 @@ import { actualizarLectura, obtenerLectura, registrarAuditLog } from '$lib/db.js
 // Importar datos de arcanos
 import { ARCANOS_MAYORES } from '$lib/data/arcanos-mayores';
 
+// DEBUG: Log at module level to verify import
+console.log('[MODULE INIT] ARCANOS_MAYORES length:', ARCANOS_MAYORES?.length);
+console.log('[MODULE INIT] Arcano 8:', ARCANOS_MAYORES?.find((a: any) => a.id === 8));
+
 function obtenerNombreCompleto(carta: CartaTarot): string {
-	const arcano = ARCANOS_MAYORES.find((a: any) => a.id === parseInt(carta.arcano));
-	if (!arcano) return carta.arcano;
-	return carta.invertida ? `${arcano.nombre} (invertida)` : arcano.nombre;
+	const arcanoId = parseInt(carta.arcano);
+	console.log('[DEBUG obtenerNombreCompleto] carta.arcano:', carta.arcano, '| arcanoId:', arcanoId);
+	const arcano = ARCANOS_MAYORES.find((a: any) => a.id === arcanoId);
+	console.log('[DEBUG obtenerNombreCompleto] arcano encontrado:', JSON.stringify(arcano));
+	console.log('[DEBUG obtenerNombreCompleto] arcano?.nombre:', arcano?.nombre);
+	if (!arcano) {
+		console.log('[DEBUG obtenerNombreCompleto] NO ENCONTRADO - Retornando:', carta.arcano);
+		return carta.arcano;
+	}
+	const resultado = carta.invertida ? `${arcano.nombre} (invertida)` : arcano.nombre;
+	console.log('[DEBUG obtenerNombreCompleto] Resultado final:', resultado);
+	return resultado;
 }
 
 function construirPromptSegunTirada(
@@ -18,6 +31,9 @@ function construirPromptSegunTirada(
 	pregunta: string,
 	cartas: CartaTarot[]
 ): string {
+	console.log('[DEBUG construirPromptSegunTirada] Iniciando con tipoTirada:', tipoTirada);
+	console.log('[DEBUG construirPromptSegunTirada] Cartas recibidas:', JSON.stringify(cartas));
+
 	const cartasTexto = cartas
 		.map((c, i) => `${i + 1}. ${obtenerNombreCompleto(c)}`)
 		.join('\n');
@@ -26,13 +42,15 @@ function construirPromptSegunTirada(
 
 	switch (tipoTirada) {
 		case 'tres_cartas':
+			console.log('[DEBUG] Entrando en case tres_cartas');
+			const [carta1, carta2, carta3] = cartas.map(c => obtenerNombreCompleto(c));
+			console.log('[DEBUG] Nombres obtenidos:', carta1, carta2, carta3);
 			promptEspecifico = `Esta es una tirada de Tres Cartas:
-- Carta 1: Pasado
-- Carta 2: Presente
-- Carta 3: Futuro
+- ${carta1}: Pasado
+- ${carta2}: Presente
+- ${carta3}: Futuro
 
-Cartas seleccionadas:
-${cartasTexto}`;
+IMPORTANTE: En tu interpretación, menciona cada carta por su nombre real (${carta1}, ${carta2}, ${carta3}) en lugar de "Carta 1", "Carta 2", "Carta 3".`;
 			break;
 
 		case 'cruz_celta':
@@ -76,7 +94,7 @@ ${cartasTexto}`;
 			promptEspecifico = `Cartas seleccionadas:\n${cartasTexto}`;
 	}
 
-	return `Eres un tarotista profesional con años de experiencia. Un consultante te ha hecho la siguiente pregunta:
+	return `Un consultante te ha hecho la siguiente pregunta:
 
 "${pregunta}"
 
@@ -88,7 +106,9 @@ Por favor, proporciona una lectura de tarot profunda, detallada y significativa.
 3. El contexto de la pregunta del consultante
 4. Un mensaje final que ofrezca claridad y guía
 
-La lectura debe ser empática, profesional y ofrecer perspectivas útiles para el consultante.`;
+La lectura debe ser empática, profesional y ofrecer perspectivas útiles para el consultante.
+
+IMPORTANTE: Finaliza tu lectura con un mensaje de cierre cálido y personal, firmado como "Mikahela". Por ejemplo: "Cuídate y cuida tu energía, Mikahela." o variaciones similares que muestren tu conexión espiritual con el consultante.`;
 }
 
 export const GET: RequestHandler = async ({ params, url }) => {
@@ -168,7 +188,7 @@ export const GET: RequestHandler = async ({ params, url }) => {
 				messages: [
 					{
 						role: 'system',
-						content: 'Eres un tarotista profesional y empático con profundo conocimiento del Tarot.'
+						content: 'Eres Mikahela, una tarotista profesional y empática con profundo conocimiento del Tarot. Tu estilo es cálido, cercano y sabio. Siempre finalizas tus lecturas con un mensaje de cierre personal como "Cuídate y cuida tu energía, Mikahela." o variaciones similares que reflejen tu calidez y conexión espiritual con el consultante.'
 					},
 					{
 						role: 'user',
