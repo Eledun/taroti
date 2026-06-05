@@ -1,3 +1,10 @@
-# allow crawling everything by default
+# Taroti - Robots.txt
+# Permitir crawling de contenido público
+
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /api/
+Disallow: /lectura/
+
+# Sitemap
+Sitemap: https://taroti.mx/sitemap.xml

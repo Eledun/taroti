@@ -78,6 +78,51 @@
 	}
 </script>
 
+<svelte:head>
+	<!-- Título y descripción -->
+	<title>Taroti - Lecturas de Tarot Profesionales con Mikahela | Tarot Online</title>
+	<meta name="description" content="Descubre tu destino con lecturas de tarot profesionales. Tiradas de 3 cartas, Cruz Celta y Rueda del Año guiadas por Mikahela. Consulta el tarot online ahora." />
+	<meta name="keywords" content="tarot, lectura de tarot, tarot online, tirada de tarot, consulta tarot, Mikahela, arcanos mayores, cruz celta, rueda del año, tarot profesional" />
+
+	<!-- Open Graph / Facebook -->
+	<meta property="og:type" content="website" />
+	<meta property="og:url" content="https://taroti.mx/" />
+	<meta property="og:title" content="Taroti - Lecturas de Tarot Profesionales con Mikahela" />
+	<meta property="og:description" content="Descubre tu destino con lecturas de tarot profundas y personalizadas. Tiradas de 3 cartas, Cruz Celta y Rueda del Año." />
+	<meta property="og:image" content="https://taroti.mx/og-image.jpg" />
+	<meta property="og:locale" content="es_MX" />
+
+	<!-- Twitter -->
+	<meta name="twitter:card" content="summary_large_image" />
+	<meta name="twitter:url" content="https://taroti.mx/" />
+	<meta name="twitter:title" content="Taroti - Lecturas de Tarot con Mikahela" />
+	<meta name="twitter:description" content="Descubre tu destino con lecturas de tarot profesionales. Tiradas de 3 cartas, Cruz Celta y Rueda del Año." />
+	<meta name="twitter:image" content="https://taroti.mx/og-image.jpg" />
+
+	<!-- Canonical URL -->
+	<link rel="canonical" href="https://taroti.mx/" />
+
+	<!-- Structured Data (Schema.org) -->
+	<script type="application/ld+json">
+	{
+		"@context": "https://schema.org",
+		"@type": "ProfessionalService",
+		"name": "Taroti",
+		"description": "Lecturas de tarot profesionales con Mikahela. Tiradas de 3 cartas, Cruz Celta y Rueda del Año.",
+		"url": "https://taroti.mx",
+		"areaServed": {
+			"@type": "Country",
+			"name": "México"
+		},
+		"priceRange": "$$",
+		"availableLanguage": {
+			"@type": "Language",
+			"name": "Español"
+		}
+	}
+	</script>
+</svelte:head>
+
 <div class="home">
 	<section class="hero" style="background-image: url({heroImage}); opacity: {heroOpacity};">
 		<div class="hero-overlay"></div>
