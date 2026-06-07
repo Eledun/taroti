@@ -38,6 +38,73 @@
 
 			return () => clearInterval(interval);
 		}
+
+		// Animaciones GSAP para cartas en hover (solo si hay lectura)
+		if (browser && !esperandoPago && lectura) {
+			// Esperar a que GSAP y los elementos estén listos
+			setTimeout(() => {
+				const gsap = (window as any).gsap;
+				if (!gsap) {
+					console.warn('[GSAP] No está disponible');
+					return;
+				}
+
+				const cards = document.querySelectorAll('.carta-visual');
+				console.log('[GSAP] Animación "Ethereal Bloom" dramática activada para', cards.length, 'cartas');
+
+				cards.forEach((card) => {
+					const isInverted = card.classList.contains('invertida');
+
+					card.addEventListener('mouseenter', () => {
+						// Timeline con múltiples efectos secuenciados
+						const tl = gsap.timeline();
+
+						// Efecto 1: Levantamiento rápido con rotación 3D dramática
+						tl.to(card, {
+							y: -25,
+							rotationY: isInverted ? 12 : 12,
+							rotationX: isInverted ? 8 : -8,
+							rotationZ: isInverted ? 183 : 3,
+							scale: 1.25,
+							z: 80,
+							duration: 0.35,
+							ease: 'back.out(2)',
+							transformPerspective: 800
+						})
+						// Efecto 2: Pulso de brillo y sombras expansivas
+						.to(card, {
+							boxShadow: '0 30px 80px rgba(139, 92, 246, 0.9), 0 0 60px rgba(168, 85, 247, 0.7), 0 0 100px rgba(245, 158, 11, 0.3)',
+							filter: 'brightness(1.3) saturate(1.4)',
+							duration: 0.2,
+							ease: 'power2.out'
+						}, '-=0.2')
+						// Efecto 3: Micro-rebote final
+						.to(card, {
+							scale: 1.22,
+							duration: 0.15,
+							ease: 'elastic.out(1, 0.3)'
+						});
+					});
+
+					card.addEventListener('mouseleave', () => {
+						// Reseteo suave
+						gsap.to(card, {
+							y: 0,
+							rotationY: 0,
+							rotationX: 0,
+							rotationZ: isInverted ? 180 : 0,
+							scale: 1,
+							z: 0,
+							boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+							filter: 'brightness(1) saturate(1)',
+							duration: 0.5,
+							ease: 'power3.inOut',
+							transformPerspective: 800
+						});
+					});
+				});
+			}, 500);
+		}
 	});
 
 	// Determinar layout de cartas según cantidad
@@ -389,8 +456,12 @@
 		<!-- Acciones -->
 		<div class="acciones fade-in">
 			<a href="/" class="btn-nueva">
-				<span class="btn-icon">🔮</span>
-				Nueva consulta
+				<span class="btn-star btn-star-left">✦</span>
+				<span class="btn-content">
+					<span class="btn-icon">🔮</span>
+					Nueva Consulta
+				</span>
+				<span class="btn-star btn-star-right">✦</span>
 			</a>
 		</div>
 
@@ -406,12 +477,13 @@
 
 <style>
 	.lectura-container {
-		min-height: calc(100vh - 200px);
+		min-height: 100vh;
 		padding: var(--spacing-xl) 0;
-		background: url('/zodiacofondo.png');
+		background: url('/zodiacofondo-optimized.jpg');
 		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;
+		background-attachment: fixed;
 		position: relative;
 		overflow: hidden;
 	}
@@ -432,6 +504,14 @@
 		background-position: 0 0, 40px 60px, 130px 270px, 70px 100px;
 		pointer-events: none;
 		opacity: 0.4;
+	}
+
+	.container {
+		max-width: 1050px;
+		margin: 0 auto;
+		padding: 0 var(--spacing-md);
+		position: relative;
+		z-index: 1;
 	}
 
 	.lectura-header {
@@ -462,25 +542,26 @@
 		animation-delay: 1.5s;
 	}
 
-	@keyframes twinkle {
-		0%, 100% { opacity: 0.3; transform: translateY(-50%) scale(1); }
-		50% { opacity: 0.8; transform: translateY(-50%) scale(1.2); }
-	}
 
 	.lectura-header h1 {
 		margin-bottom: var(--spacing-lg);
 		font-size: 2.75rem;
-		background: linear-gradient(135deg, var(--color-primary), var(--color-secondary), var(--color-primary));
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		background-size: 200% auto;
+		color: #ffffff !important;
+		background: none !important;
+		-webkit-background-clip: unset !important;
+		-webkit-text-fill-color: #ffffff !important;
+		background-clip: unset !important;
 		letter-spacing: 0.05em;
 		font-weight: 700;
 		text-transform: uppercase;
 		font-family: Georgia, serif;
 		position: relative;
-		animation: shimmer 8s ease-in-out infinite;
+	}
+
+	.lectura-header p {
+		color: #ffffff;
+		font-size: 1.125rem;
+		line-height: 1.6;
 	}
 
 	@keyframes shimmer {
@@ -819,17 +900,12 @@
 		align-items: center;
 		gap: var(--spacing-md);
 		animation: slideUp 0.5s ease-out both;
+		position: relative;
+		z-index: 1;
 	}
 
-	@keyframes slideUp {
-		from {
-			opacity: 0;
-			transform: translateY(20px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
+	.carta-item:hover {
+		z-index: 1000;
 	}
 
 	.carta-visual {
@@ -837,12 +913,15 @@
 		height: 250px;
 		position: relative;
 		overflow: visible;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		cursor: pointer;
 		z-index: 1;
+		isolation: auto;
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+		transform-style: preserve-3d;
+		perspective: 1000px;
 	}
 
 	.carta-visual::before {
@@ -860,9 +939,8 @@
 	}
 
 	.carta-visual:hover {
-		transform: scale(2.5);
-		z-index: 100;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+		z-index: 999;
+		isolation: isolate;
 	}
 
 	.carta-visual:hover::before {
@@ -871,12 +949,6 @@
 
 	.carta-visual.invertida {
 		transform: rotate(180deg);
-	}
-
-	.carta-visual.invertida:hover {
-		transform: rotate(180deg) scale(2.5);
-		z-index: 100;
-		box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
 	}
 
 	/* Forzar tamaño uniforme para todas las imágenes de cartas */
@@ -989,15 +1061,8 @@
 		left: 20%;
 		right: 20%;
 		height: 4px;
-		background: linear-gradient(
-			90deg,
-			transparent,
-			var(--color-primary),
-			var(--color-secondary),
-			var(--color-primary),
-			transparent
-		);
-		opacity: 0.6;
+		background: transparent;
+		opacity: 0;
 		border-radius: 2px;
 	}
 
@@ -1552,20 +1617,11 @@
 	.consejo-contenido :global(ul li):nth-child(3)::before { animation-delay: 1s; }
 	.consejo-contenido :global(ul li):nth-child(4)::before { animation-delay: 1.5s; }
 
-	@keyframes sparkle {
-		0%, 100% { opacity: 0.7; transform: scale(1); }
-		50% { opacity: 1; transform: scale(1.2); }
-	}
-
 	.acciones {
 		display: flex;
 		justify-content: center;
-		gap: var(--spacing-md);
-		flex-wrap: wrap;
 		margin-top: calc(var(--spacing-xxl) * 2.5);
 		margin-bottom: var(--spacing-xl);
-		padding-top: var(--spacing-xxl);
-		border-top: 1px solid rgba(139, 92, 246, 0.15);
 	}
 
 	.btn-compartir,
@@ -1629,45 +1685,94 @@
 	}
 
 	.btn-nueva {
-		background: linear-gradient(
-			135deg,
-			rgba(139, 92, 246, 0.9) 0%,
-			rgba(168, 85, 247, 0.85) 50%,
-			rgba(139, 92, 246, 0.9) 100%
-		);
-		color: white;
-		box-shadow:
-			0 8px 32px rgba(139, 92, 246, 0.4),
-			0 0 60px rgba(139, 92, 246, 0.2),
-			inset 0 1px 0 rgba(255, 255, 255, 0.2);
-		position: relative;
-		overflow: hidden;
+		/* ESTADO ANTERIOR (botón rectangular simple):
 		padding: 1.25rem 3rem;
-		margin-top: var(--spacing-lg);
+		border-radius: var(--radius-lg);
 		font-size: 1.125rem;
-		font-weight: 700;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		border: 2px solid rgba(168, 85, 247, 0.5);
-		backdrop-filter: blur(20px);
 		font-family: Georgia, serif;
+		background: linear-gradient(135deg, rgba(139, 92, 246, 0.9), rgba(168, 85, 247, 0.85));
+		*/
+
+		/* ESTADO NUEVO (estilo elegante con bordes dorados inspirado en la imagen): */
+		position: relative;
+		overflow: hidden;
+		padding: 1.5rem 2rem;
+		margin-top: var(--spacing-lg);
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		gap: 0.75rem;
+
+		/* Fondo negro elegante con gradiente sutil */
+		background: linear-gradient(
+			135deg,
+			rgba(10, 10, 10, 0.95) 0%,
+			rgba(20, 20, 20, 0.98) 50%,
+			rgba(10, 10, 10, 0.95) 100%
+		);
+
+		/* Texto dorado elegante */
+		color: #D4AF37;
+		font-size: 1.5rem;
+		font-weight: 400;
+		letter-spacing: 0.08em;
+		text-transform: none;
+		font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;
+
+		/* Bordes redondeados suaves */
+		border-radius: 80px;
+
+		/* Borde dorado brillante con múltiples capas */
+		border: 3px solid transparent;
+		background-clip: padding-box;
+
+		/* Sombras doradas elegantes */
+		box-shadow:
+			0 0 30px rgba(212, 175, 55, 0.4),
+			0 0 60px rgba(212, 175, 55, 0.2),
+			0 8px 32px rgba(0, 0, 0, 0.6),
+			inset 0 1px 0 rgba(212, 175, 55, 0.2);
+
+		backdrop-filter: blur(10px);
+		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.btn-nueva::before {
 		content: '';
 		position: absolute;
-		inset: -2px;
+		inset: -3px;
+		border-radius: 80px;
+		padding: 3px;
 		background: linear-gradient(
-			45deg,
-			transparent 30%,
-			rgba(255, 255, 255, 0.3) 50%,
-			transparent 70%
+			90deg,
+			#D4AF37 0%,
+			#F4E5B0 25%,
+			#D4AF37 50%,
+			#C5A028 75%,
+			#D4AF37 100%
 		);
-		transform: translateX(-100%) rotate(10deg);
-		transition: transform 0.6s ease;
+		-webkit-mask:
+			linear-gradient(#fff 0 0) content-box,
+			linear-gradient(#fff 0 0);
+		-webkit-mask-composite: xor;
+		mask-composite: exclude;
+		opacity: 1;
+		animation: borderShine 3s linear infinite;
+	}
+
+	@keyframes borderShine {
+		0% {
+			background-position: 0% 50%;
+		}
+		100% {
+			background-position: 200% 50%;
+		}
 	}
 
 	.btn-nueva::after {
+		/* ESTADO ANTERIOR (estrella a la izquierda):
 		content: '✦';
 		position: absolute;
 		left: 1.5rem;
@@ -1676,52 +1781,58 @@
 		font-size: 1.5rem;
 		opacity: 0.6;
 		animation: pulseGlow 2s ease-in-out infinite;
-	}
+		*/
 
-	@keyframes pulseGlow {
-		0%, 100% {
-			opacity: 0.6;
-			text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
-		}
-		50% {
-			opacity: 1;
-			text-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
-		}
+		/* ESTADO NUEVO (sin estrella decorativa en el círculo): */
+		content: none;
 	}
 
 	.btn-nueva:hover {
-		transform: translateY(-4px) scale(1.02);
+		transform: translateY(-2px) scale(1.02);
 		box-shadow:
-			0 12px 48px rgba(139, 92, 246, 0.6),
-			0 0 80px rgba(168, 85, 247, 0.4),
-			inset 0 1px 0 rgba(255, 255, 255, 0.3);
-		border-color: rgba(168, 85, 247, 0.8);
-		text-shadow: 0 0 20px rgba(255, 255, 255, 0.3);
+			0 0 40px rgba(212, 175, 55, 0.6),
+			0 0 80px rgba(212, 175, 55, 0.3),
+			0 12px 40px rgba(0, 0, 0, 0.7),
+			inset 0 2px 0 rgba(212, 175, 55, 0.3);
+		color: #F4E5B0;
 	}
 
 	.btn-nueva:hover::before {
-		transform: translateX(100%) rotate(10deg);
+		animation: borderShine 1.5s linear infinite;
 	}
 
 	.btn-nueva:hover::after {
-		animation: rotateSparkle 0.6s ease-in-out infinite;
-	}
-
-	@keyframes rotateSparkle {
-		0%, 100% {
-			transform: translateY(-50%) rotate(0deg) scale(1);
-		}
-		50% {
-			transform: translateY(-50%) rotate(180deg) scale(1.2);
-		}
+		/* Sin animación adicional en hover */
 	}
 
 	.btn-nueva:active {
 		transform: translateY(-2px) scale(1);
 	}
 
+	.btn-content {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+
 	.btn-icon {
-		font-size: 1.2rem;
+		font-size: 1.5rem;
+		filter: drop-shadow(0 0 10px #D4AF37);
+	}
+
+	.btn-star {
+		font-size: 1.5rem;
+		color: #D4AF37;
+		text-shadow: 0 0 20px rgba(212, 175, 55, 0.8);
+		animation: twinkle 2s ease-in-out infinite;
+	}
+
+	.btn-star-left {
+		animation-delay: 0s;
+	}
+
+	.btn-star-right {
+		animation-delay: 1s;
 	}
 
 	.expiracion-info {
@@ -1744,17 +1855,6 @@
 		animation: fadeIn 0.6s ease-out;
 	}
 
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-			transform: translateY(10px);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
 	/* Spinner de carga */
 	.spinner {
 		margin: 2rem auto;
@@ -1766,14 +1866,9 @@
 		animation: spin 1s linear infinite;
 	}
 
-	@keyframes spin {
-		0% { transform: rotate(0deg); }
-		100% { transform: rotate(360deg); }
-	}
-
 	.texto-pequeno {
 		font-size: 0.875rem;
-		color: var(--color-text-light);
+		color: #ffffff;
 		margin-top: 1rem;
 	}
 

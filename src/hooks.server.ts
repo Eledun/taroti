@@ -7,11 +7,11 @@ import type { Handle } from '@sveltejs/kit';
 export const handle: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 
-	// Configurar CSP para permitir scripts de Mercado Pago
+	// Configurar CSP para permitir scripts de Mercado Pago y GSAP
 	const cspDirectives = [
 		"default-src 'self'",
-		// Permitir scripts de Mercado Pago y propios
-		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com https://www.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com",
+		// Permitir scripts de Mercado Pago, GSAP y propios
+		"script-src 'self' 'unsafe-inline' 'unsafe-eval' https://sdk.mercadopago.com https://www.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com https://cdnjs.cloudflare.com",
 		// Permitir estilos de Mercado Pago y Google Fonts
 		"style-src 'self' 'unsafe-inline' https://sdk.mercadopago.com https://*.mlstatic.com https://*.mercadopago.com https://fonts.googleapis.com",
 		// Permitir imágenes de Mercado Pago
