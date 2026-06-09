@@ -5,6 +5,7 @@ import { guardarPreferenceId, registrarAuditLog } from '$lib/db.js';
 
 interface MercadoPagoItem {
 	title: string;
+	description: string; // Campo obligatorio según MP
 	quantity: number;
 	unit_price: number;
 	currency_id: string;
@@ -65,11 +66,21 @@ export const POST: RequestHandler = async ({ request }) => {
 		throw error(500, 'MERCADOPAGO_ACCESS_TOKEN no configurado en el servidor');
 	}
 
+	// Validar campos obligatorios según requerimientos de Mercado Pago
+	if (!email) {
+		throw error(400, 'El email del comprador es obligatorio para procesar el pago');
+	}
+
+	if (!nombre) {
+		throw error(400, 'El nombre del comprador es obligatorio para procesar el pago');
+	}
+
 	// Crear preferencia de pago en Mercado Pago según mejores prácticas de MP Chile
 	const preference: MercadoPagoPreference = {
 		items: [
 			{
 				title: plan_nombre || 'Lectura de Tarot',
+				description: `Lectura personalizada de Tarot - ${plan_nombre || 'Plan estándar'}. Incluye interpretación detallada de cartas seleccionadas.`,
 				quantity: 1,
 				unit_price: precio || 5000,
 				currency_id: 'CLP'
@@ -91,27 +102,28 @@ export const POST: RequestHandler = async ({ request }) => {
 		}
 	};
 
-	// Agregar información del comprador si se proporciona
-	if (email || nombre) {
-		preference.payer = {};
+	// Agregar información del comprador (campos obligatorios)
+	preference.payer = {
+		email: email
+	};
 
-		if (email) {
-			preference.payer.email = email;
-		}
+	// Procesar nombre y apellido
+	const partesNombre = nombre.trim().split(' ');
+	preference.payer.name = partesNombre[0];
 
-		if (nombre) {
-			const partesNombre = nombre.split(' ');
-			preference.payer.name = partesNombre[0];
-			if (partesNombre.length > 1) {
-				preference.payer.surname = partesNombre.slice(1).join(' ');
-			}
-		}
+	// El apellido es obligatorio - si no hay, usar el mismo nombre
+	if (partesNombre.length > 1) {
+		preference.payer.surname = partesNombre.slice(1).join(' ');
+	} else {
+		// Si solo dio un nombre, duplicarlo como apellido (requerimiento de MP)
+		preference.payer.surname = partesNombre[0];
+	}
 
-		if (telefono) {
-			preference.payer.phone = {
-				number: parseInt(telefono.replace(/\D/g, ''))
-			};
-		}
+	// Agregar teléfono si se proporciona (opcional pero recomendado)
+	if (telefono) {
+		preference.payer.phone = {
+			number: parseInt(telefono.replace(/\D/g, ''))
+		};
 	}
 
 	try {

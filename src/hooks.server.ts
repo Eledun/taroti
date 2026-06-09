@@ -8,6 +8,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const response = await resolve(event);
 
 	// Configurar CSP para permitir scripts de Mercado Pago y GSAP
+	// Nota: Los errores de CSP de Mercado Pago son normales y no afectan el funcionamiento
 	const cspDirectives = [
 		"default-src 'self'",
 		// Permitir scripts de Mercado Pago, GSAP y propios

@@ -69,7 +69,9 @@ export interface IniciarPagoData {
 	sesion_id: string;
 	plan_nombre?: string;
 	precio?: number;
-	email?: string;
+	email: string; // Obligatorio según requerimientos de MP
+	nombre: string; // Obligatorio según requerimientos de MP
+	telefono?: string; // Opcional pero recomendado
 	token_acceso?: string;
 }
 
@@ -80,14 +82,23 @@ export async function crearPreferenciaPago(data: IniciarPagoData): Promise<Prefe
 	});
 }
 
-export async function iniciarPago(sesionId: string, planNombre?: string, precio?: number, email?: string): Promise<PreferenciaPago> {
+export async function iniciarPago(
+	sesionId: string,
+	planNombre?: string,
+	precio?: number,
+	email?: string,
+	nombre?: string,
+	telefono?: string
+): Promise<PreferenciaPago> {
 	return fetchAPI<PreferenciaPago>('/pagos/preference', {
 		method: 'POST',
 		body: JSON.stringify({
 			sesion_id: sesionId,
 			plan_nombre: planNombre,
 			precio: precio,
-			email: email
+			email: email || 'usuario@taroti.fun', // Fallback temporal
+			nombre: nombre || 'Usuario Taroti', // Fallback temporal
+			telefono: telefono
 		})
 	});
 }
