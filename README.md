@@ -2,8 +2,9 @@
 
 Plataforma de lecturas de tarot personalizadas con IA para mercado LATAM.
 
-**Versión:** 2.3.0
+**Versión:** 2.3.12
 **Stack:** SvelteKit + MariaDB + Mercado Pago + OpenAI
+**Deploy:** Hostinger (SSH con expect)
 
 ---
 
@@ -60,6 +61,18 @@ npm run dev
 # 5. Verificar
 curl http://localhost:5173/api/pagos/verificar/test-123
 ```
+
+### Deploy a Producción (Hostinger)
+
+```bash
+# 1. Build local
+npm run build
+
+# 2. Deploy automático (método default)
+./deploy-with-password.sh
+```
+
+**📖 Documentación completa:** [docs/SSH-DEPLOY-METHOD.md](./docs/SSH-DEPLOY-METHOD.md)
 
 ---
 
