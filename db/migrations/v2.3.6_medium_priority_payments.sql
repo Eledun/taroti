@@ -32,11 +32,11 @@ ADD COLUMN telefono_usuario VARCHAR(50) DEFAULT NULL AFTER nombre_usuario;
 -- ============================================================================
 
 ALTER TABLE pagos
-ADD COLUMN tipo_pago VARCHAR(50) DEFAULT NULL AFTER telefono_usuario COMMENT 'credit_card, debit_card, etc.',
-ADD COLUMN metodo_pago VARCHAR(50) DEFAULT NULL AFTER tipo_pago COMMENT 'visa, mastercard, etc.',
+ADD COLUMN tipo_pago VARCHAR(50) DEFAULT NULL AFTER telefono_usuario,
+ADD COLUMN metodo_pago VARCHAR(50) DEFAULT NULL AFTER tipo_pago,
 ADD COLUMN cuotas INT DEFAULT 1 AFTER metodo_pago,
-ADD COLUMN monto_neto DECIMAL(10, 2) DEFAULT NULL AFTER cuotas COMMENT 'Monto sin fees',
-ADD COLUMN fee_mp DECIMAL(10, 2) DEFAULT NULL AFTER monto_neto COMMENT 'Comisión de MP';
+ADD COLUMN monto_neto DECIMAL(10, 2) DEFAULT NULL AFTER cuotas,
+ADD COLUMN fee_mp DECIMAL(10, 2) DEFAULT NULL AFTER monto_neto;
 
 -- ============================================================================
 -- PASO 4: Agregar campos de seguimiento
@@ -45,7 +45,7 @@ ADD COLUMN fee_mp DECIMAL(10, 2) DEFAULT NULL AFTER monto_neto COMMENT 'Comisió
 ALTER TABLE pagos
 ADD COLUMN ip_address VARCHAR(45) DEFAULT NULL AFTER fee_mp,
 ADD COLUMN user_agent TEXT DEFAULT NULL AFTER ip_address,
-ADD COLUMN metadata_extra JSON DEFAULT NULL AFTER user_agent COMMENT 'Datos adicionales flexibles';
+ADD COLUMN metadata_extra JSON DEFAULT NULL AFTER user_agent;
 
 -- ============================================================================
 -- PASO 5: Agregar índices para optimizar búsquedas

@@ -14,11 +14,14 @@ class ApiError extends Error {
 	}
 }
 
-async function fetchAPI<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchAPI<T>(endpoint: string, options: RequestInit = {}, customFetch?: typeof fetch): Promise<T> {
 	const url = `${API_URL}${endpoint}`;
 	console.log('[API] Fetching:', url);
 
-	const response = await fetch(url, {
+	// Usar customFetch si se proporciona, sino usar fetch global
+	const fetchFn = customFetch || fetch;
+
+	const response = await fetchFn(url, {
 		...options,
 		headers: {
 			'Content-Type': 'application/json',
@@ -98,7 +101,7 @@ export interface ObtenerLecturaParams {
 	token_acceso?: string;
 }
 
-export async function obtenerLectura(sesionId: string, params: ObtenerLecturaParams): Promise<Lectura> {
+export async function obtenerLectura(sesionId: string, params: ObtenerLecturaParams, customFetch?: typeof fetch): Promise<Lectura> {
 	const queryParams = new URLSearchParams({
 		pregunta: params.pregunta,
 		cartas: JSON.stringify(params.cartas),
@@ -110,6 +113,6 @@ export async function obtenerLectura(sesionId: string, params: ObtenerLecturaPar
 		queryParams.set('token_acceso', params.token_acceso);
 	}
 
-	return fetchAPI<Lectura>(`/lecturas/${sesionId}?${queryParams.toString()}`);
+	return fetchAPI<Lectura>(`/lecturas/${sesionId}?${queryParams.toString()}`, {}, customFetch);
 }
 

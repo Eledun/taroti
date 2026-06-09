@@ -214,14 +214,6 @@
 		animation: fadeIn 0.3s ease-out;
 	}
 
-	@keyframes fadeIn {
-		from {
-			opacity: 0;
-		}
-		to {
-			opacity: 1;
-		}
-	}
 
 	.modal-content {
 		background-color: var(--color-bg-card);
@@ -236,16 +228,6 @@
 		animation: slideUp 0.3s ease-out;
 	}
 
-	@keyframes slideUp {
-		from {
-			transform: translateY(50px);
-			opacity: 0;
-		}
-		to {
-			transform: translateY(0);
-			opacity: 1;
-		}
-	}
 
 	.modal-close {
 		position: absolute;

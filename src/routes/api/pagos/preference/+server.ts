@@ -46,6 +46,7 @@ interface MercadoPagoPreference {
 	};
 	auto_return?: string;
 	external_reference: string;
+	notification_url?: string;
 	payment_methods?: MercadoPagoPaymentMethods;
 }
 
@@ -81,6 +82,7 @@ export const POST: RequestHandler = async ({ request }) => {
 		},
 		auto_return: 'approved',
 		external_reference: sesion_id,
+		notification_url: `${FRONTEND_URL || 'http://localhost:5173'}/api/pagos/webhook`,
 		payment_methods: {
 			excluded_payment_methods: [],
 			excluded_payment_types: [],

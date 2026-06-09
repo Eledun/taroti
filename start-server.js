@@ -1,6 +1,6 @@
 // Script de inicio para cargar variables de entorno en producción
 import 'dotenv/config';
-import { handler } from './handler.js';
+import { handler } from './build/handler.js';
 import express from 'express';
 
 const app = express();

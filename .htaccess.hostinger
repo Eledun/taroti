@@ -1,0 +1,8 @@
+PassengerAppRoot /home/u616221621/domains/dimgrey-louse-600796.hostingersite.com/nodejs
+PassengerAppType node
+PassengerNodejs /opt/alt/alt-nodejs22/root/bin/node
+PassengerStartupFile start-wrapper.cjs
+PassengerBaseURI /
+PassengerRestartDir /home/u616221621/domains/dimgrey-louse-600796.hostingersite.com/nodejs/tmp
+SetEnv LSNODE_CONSOLE_LOG console.log
+RewriteRule ^\.builds - [F,L]

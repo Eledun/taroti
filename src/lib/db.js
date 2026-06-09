@@ -19,6 +19,7 @@ export function getPool() {
 	if (!pool) {
 		const DB_HOST = env.DB_HOST || 'localhost';
 		const DB_PORT = parseInt(env.DB_PORT || '3306');
+		const DB_SOCKET = env.DB_SOCKET; // Socket Unix para Hostinger
 		const DB_USER = env.DB_USER;
 		const DB_PASSWORD = env.DB_PASSWORD;
 		const DB_NAME = env.DB_NAME;
@@ -27,26 +28,31 @@ export function getPool() {
 			throw new Error('Faltan variables de entorno: DB_USER, DB_PASSWORD, DB_NAME');
 		}
 
-		pool = mariadb.createPool({
-			host: DB_HOST,
-			port: DB_PORT,
+		// Configuración de conexión: usar socket Unix si está disponible, sino TCP/IP
+		const poolConfig = {
 			user: DB_USER,
 			password: DB_PASSWORD,
 			database: DB_NAME,
 			connectionLimit: 10,
-			connectTimeout: 5000,
-			acquireTimeout: 5000,
-			// Configuración para mejor rendimiento
-			timezone: 'America/Santiago',
+			connectTimeout: 10000,
+			acquireTimeout: 10000,
 			charset: 'utf8mb4',
-			// Manejo de conexiones
-			idleTimeout: 60000, // 60 segundos
+			idleTimeout: 60000,
 			minimumIdle: 2
-		});
+		};
+
+		// Si hay socket Unix (Hostinger), usarlo. Sino, usar TCP/IP (desarrollo local)
+		if (DB_SOCKET) {
+			poolConfig.socketPath = DB_SOCKET;
+		} else {
+			poolConfig.host = DB_HOST;
+			poolConfig.port = DB_PORT;
+		}
+
+		pool = mariadb.createPool(poolConfig);
 
 		console.log('[DB] Pool MariaDB creado:', {
-			host: DB_HOST,
-			port: DB_PORT,
+			...(DB_SOCKET ? { socketPath: DB_SOCKET } : { host: DB_HOST, port: DB_PORT }),
 			database: DB_NAME,
 			connectionLimit: 10
 		});
@@ -248,12 +254,17 @@ export async function obtenerLectura(sesionId, tokenAcceso = null) {
 
 	// Parsear cartas_seleccionadas de JSON
 	if (lectura.cartas_seleccionadas) {
-		try {
-			lectura.cartas_seleccionadas = JSON.parse(lectura.cartas_seleccionadas);
-		} catch (err) {
-			console.error('[DB] Error parseando cartas:', err);
-			lectura.cartas_seleccionadas = [];
+		// Si ya es un array/object (MariaDB puede devolverlo parseado), no hacer nada
+		if (typeof lectura.cartas_seleccionadas === 'string') {
+			try {
+				lectura.cartas_seleccionadas = JSON.parse(lectura.cartas_seleccionadas);
+			} catch (err) {
+				console.error('[DB] Error parseando cartas:', err);
+				lectura.cartas_seleccionadas = [];
+			}
 		}
+		// Si ya es un object/array, ya está parseado por MariaDB
+		console.log('[DB] Cartas cargadas:', JSON.stringify(lectura.cartas_seleccionadas));
 	}
 
 	return lectura;

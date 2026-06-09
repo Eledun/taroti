@@ -54,14 +54,15 @@
 <style>
 	.tarot-card {
 		position: relative;
-		width: 120px;
-		height: 200px;
+		/* Responsive sizing: scales between 80px-150px based on viewport width */
+		width: clamp(80px, 8vw, 150px);
+		height: clamp(133px, 13.3vw, 250px); /* Maintains 1:1.67 aspect ratio */
 		perspective: 1000px;
 		cursor: pointer;
 		background: none;
 		border: none;
 		padding: 0;
-		transition: all var(--transition-base);
+		transition: none;
 	}
 
 	.tarot-card.selected.revealed {
@@ -78,18 +79,17 @@
 		width: 100%;
 		height: 100%;
 		transform-style: preserve-3d;
-		transition: transform 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: none;
 	}
 
 	/* Hover en cartas no seleccionadas: pequeño scale */
 	.tarot-card:hover:not(.disabled):not(.selected) .card-inner {
-		transform: scale(1.05);
+		/* Hover effect removed */
 	}
 
 	/* Hover en cartas seleccionadas y reveladas: zoom grande */
 	.tarot-card.selected.revealed:hover .card-inner {
-		transform: scale(1.3);
-		z-index: 100;
+		/* Hover effect removed */
 	}
 
 	.tarot-card.selected .card-inner {
@@ -105,6 +105,12 @@
 		transform: none;
 	}
 
+	/* Allow animations to work during card selection */
+	:global(.tarot-card.card-animating) .card-inner {
+		/* Disable transform override during animation */
+		transform: none !important;
+	}
+
 	.tarot-card.revealed.invertida .card-inner {
 		transform: rotate(180deg);
 	}
@@ -114,9 +120,9 @@
 		position: absolute;
 		width: 100%;
 		height: 100%;
-		border-radius: 0;
+		border-radius: 12px;
 		border: none;
-		overflow: visible;
+		overflow: hidden;
 		box-shadow: none;
 		display: flex;
 		align-items: center;
@@ -165,8 +171,9 @@
 
 	@media (max-width: 768px) {
 		.tarot-card {
-			width: 90px;
-			height: 150px;
+			/* On mobile, use smaller range */
+			width: clamp(70px, 12vw, 110px);
+			height: clamp(117px, 20vw, 183px);
 		}
 
 		.pattern-star {

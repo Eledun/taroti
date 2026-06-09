@@ -180,8 +180,8 @@
 			const pagoResponse = await iniciarPago(sesionId, plan.nombre, plan.precio_final);
 
 			if (pagoResponse.init_point) {
-				// Abrir Mercado Pago en una nueva ventana
-				window.open(pagoResponse.init_point, '_blank');
+				// Redirigir a Mercado Pago en la misma ventana
+				window.location.href = pagoResponse.init_point;
 			} else {
 				throw new Error('No se recibió el enlace de pago');
 			}
@@ -206,8 +206,8 @@
 			const pagoResponse = await iniciarPago(sesionId, plan?.nombre, plan?.precio_final);
 
 			if (pagoResponse.init_point) {
-				// Abrir Mercado Pago en una nueva ventana
-				window.open(pagoResponse.init_point, '_blank');
+				// Redirigir a Mercado Pago en la misma ventana
+				window.location.href = pagoResponse.init_point;
 			} else {
 				throw new Error('No se recibió el enlace de pago');
 			}
@@ -427,9 +427,7 @@
 		left: 0;
 		width: 100%;
 		height: 100%;
-		background:
-			linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.6) 100%),
-			url('/fondotarot.png');
+		background: url('/fondotarot-optimized.jpg');
 		background-size: cover;
 		background-position: center;
 		background-repeat: no-repeat;
@@ -495,10 +493,6 @@
 		animation: twinkle 16s ease-in-out infinite;
 	}
 
-	@keyframes twinkle {
-		0%, 100% { opacity: 1; }
-		50% { opacity: 0.3; }
-	}
 
 	/* Main Container */
 	.consulta-container {
@@ -1065,9 +1059,6 @@
 		animation: spin 0.8s linear infinite;
 	}
 
-	@keyframes spin {
-		to { transform: rotate(360deg); }
-	}
 
 	/* Revelation Header */
 	.revelation-header {

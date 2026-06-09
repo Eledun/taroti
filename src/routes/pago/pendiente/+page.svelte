@@ -99,16 +99,6 @@
     color: white;
   }
 
-  @keyframes scaleIn {
-    from {
-      transform: scale(0);
-      opacity: 0;
-    }
-    to {
-      transform: scale(1);
-      opacity: 1;
-    }
-  }
 
   h1 {
     color: #1f2937;

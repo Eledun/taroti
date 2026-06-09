@@ -90,7 +90,7 @@ export const load: PageLoad = async ({ params, url, fetch }) => {
 			tipo_tirada: sesionData.plan.tipo_tirada,
 			plan_nombre: sesionData.plan.nombre,
 			token_acceso: tokenAcceso || undefined
-		});
+		}, fetch);
 
 		// Guardar lectura en sessionStorage para no regenerarla
 		if (typeof window !== 'undefined') {

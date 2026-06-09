@@ -16,6 +16,16 @@ export const POST: RequestHandler = async ({ request }) => {
 	const body = await request.json();
 	const { plan_id, pregunta, cartas } = body;
 
+	// DEBUG: Verificar qué estamos recibiendo
+	console.log('[DEBUG SESIONES] ========================================');
+	console.log('[DEBUG SESIONES] Body recibido:', body);
+	console.log('[DEBUG SESIONES] typeof cartas:', typeof cartas);
+	console.log('[DEBUG SESIONES] Array.isArray(cartas):', Array.isArray(cartas));
+	console.log('[DEBUG SESIONES] cartas raw:', cartas);
+	console.log('[DEBUG SESIONES] cartas[0]:', cartas && cartas[0]);
+	console.log('[DEBUG SESIONES] JSON.stringify(cartas):', JSON.stringify(cartas));
+	console.log('[DEBUG SESIONES] ========================================');
+
 	if (!plan_id || !pregunta || !cartas) {
 		throw error(400, 'Faltan datos requeridos: plan_id, pregunta, cartas');
 	}
@@ -59,6 +69,7 @@ export const POST: RequestHandler = async ({ request }) => {
 			const expiraEn = new Date();
 			expiraEn.setDate(expiraEn.getDate() + 30);
 
+			// Insertar en lecturas
 			await conn.query(
 				`INSERT INTO lecturas (
 					sesion_id, plan_id, plan_nombre, tipo_tirada, precio,
@@ -78,6 +89,20 @@ export const POST: RequestHandler = async ({ request }) => {
 					'pendiente',
 					'anonimo',
 					expiraEn.toISOString().slice(0, 19).replace('T', ' ')
+				]
+			);
+
+			// Insertar en pagos (registro inicial pendiente)
+			await conn.query(
+				`INSERT INTO pagos (
+					sesion_id, plan_nombre, monto_clp, estado_mp, estado_detalle_mp
+				) VALUES (?, ?, ?, ?, ?)`,
+				[
+					sesionId,
+					plan.nombre,
+					plan.precio_final,
+					'pending',
+					'pending_payment_in_process'
 				]
 			);
 

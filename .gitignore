@@ -38,3 +38,5 @@ Thumbs.db
 # Archivos de deploy
 *.tar.gz
 *.zip
+hostingerpass*
+.DS_Store

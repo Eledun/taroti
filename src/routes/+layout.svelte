@@ -132,14 +132,6 @@
 		animation: fadeInOverlay 1s ease-in-out forwards, fadeOutOverlayGlobal 0.8s ease-in-out 3.2s forwards;
 	}
 
-	@keyframes fadeInOverlay {
-		0% {
-			opacity: 0;
-		}
-		100% {
-			opacity: 1;
-		}
-	}
 
 	@keyframes fadeOutOverlayGlobal {
 		0% {
@@ -159,20 +151,6 @@
 		filter: drop-shadow(0 0 30px rgba(138, 159, 181, 0.6));
 	}
 
-	@keyframes moonAppear {
-		0% {
-			opacity: 0;
-			transform: scale(0.5) rotate(0deg);
-		}
-		50% {
-			opacity: 1;
-			transform: scale(1.2) rotate(180deg);
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1) rotate(360deg);
-		}
-	}
 
 	.audio-control:active {
 		transform: scale(0.95);

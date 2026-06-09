@@ -93,16 +93,6 @@
 		animation: scaleIn 0.5s ease-out;
 	}
 
-	@keyframes scaleIn {
-		from {
-			transform: scale(0);
-			opacity: 0;
-		}
-		to {
-			transform: scale(1);
-			opacity: 1;
-		}
-	}
 
 	.resultado-card h1 {
 		margin-bottom: var(--spacing-md);

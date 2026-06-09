@@ -3,8 +3,8 @@
 	import { goto, preloadData } from '$app/navigation';
 	import { obtenerPlanes } from '$lib/services/api';
 	import type { Plan } from '$lib/types';
-	import heroImage from '$lib/assets/images/sol.jpeg';
-	import moonImage from '$lib/assets/images/moon.jpeg';
+	import heroImage from '$lib/assets/images/sol1-optimized.jpg';
+	import moonImage from '$lib/assets/images/moon1-optimized.jpg';
 	import { isTransitioning } from '$lib/stores/transition';
 
 	let planes = $state<Plan[]>([]);
@@ -272,7 +272,13 @@
 	}
 
 	.hero-overlay {
-		display: none;
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0);
+		z-index: 0;
 	}
 
 	.hero-content {
@@ -329,29 +335,23 @@
 	}
 
 	.gradient-text {
-		background: linear-gradient(135deg, var(--color-primary-light), var(--color-secondary-light), var(--color-primary));
-		background-size: 200% 200%;
-		-webkit-background-clip: text;
-		-webkit-text-fill-color: transparent;
-		background-clip: text;
-		animation: gradientShift 8s ease infinite;
+		color: #ffffff !important;
+		filter: none !important;
 		display: inline-block;
 	}
 
-	@keyframes gradientShift {
-		0%, 100% { background-position: 0% 50%; }
-		50% { background-position: 100% 50%; }
-	}
 
 	.hero-description {
 		font-size: clamp(1.1rem, 2.5vw, 1.5rem);
-		color: var(--color-text-muted);
+		color: #ffffff !important;
 		line-height: 1.7;
 		max-width: 800px;
 		margin: 0 auto;
 		animation: fadeInUp 1s ease-out 0.3s both;
 		font-weight: 300;
 		text-align: center;
+		text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7),
+		             0 4px 16px rgba(0, 0, 0, 0.5);
 	}
 
 	.planes-section {
@@ -368,7 +368,14 @@
 	}
 
 	.planes-section::before {
-		display: none;
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.3);
+		z-index: 0;
 	}
 
 	.planes-container {
@@ -614,7 +621,7 @@
 	/* Tarjeta 1 - Luna (Plateado/Rosa Místico) */
 	.plan-card-1 .plan-card-front,
 	.plan-card-1 .plan-card-back {
-		background: rgba(30, 41, 59, 0.85);
+		background: rgba(30, 41, 59, 0.30);
 		border: 2px solid rgba(236, 72, 153, 0.5);
 		box-shadow: 0 8px 32px 0 rgba(236, 72, 153, 0.4);
 	}
@@ -631,7 +638,7 @@
 
 	.plan-card-2 .plan-card-front,
 	.plan-card-2 .plan-card-back {
-		background: rgba(30, 41, 59, 0.85);
+		background: rgba(30, 41, 59, 0.30);
 		border: 2px solid rgba(212, 175, 55, 0.6);
 		box-shadow: 0 8px 32px 0 rgba(212, 175, 55, 0.5);
 	}
@@ -644,7 +651,7 @@
 	/* Tarjeta 3 - Estrella (Púrpura Mágico) */
 	.plan-card-3 .plan-card-front,
 	.plan-card-3 .plan-card-back {
-		background: rgba(30, 41, 59, 0.85);
+		background: rgba(30, 41, 59, 0.30);
 		border: 2px solid rgba(139, 92, 246, 0.5);
 		box-shadow: 0 8px 32px 0 rgba(139, 92, 246, 0.4);
 	}
@@ -907,14 +914,6 @@
 		animation: fadeOutOverlay 1s ease-in-out forwards;
 	}
 
-	@keyframes fadeInOverlay {
-		0% {
-			opacity: 0;
-		}
-		100% {
-			opacity: 1;
-		}
-	}
 
 	@keyframes fadeOutOverlay {
 		0% {
@@ -933,20 +932,6 @@
 		filter: drop-shadow(0 0 30px rgba(138, 159, 181, 0.6));
 	}
 
-	@keyframes moonAppear {
-		0% {
-			opacity: 0;
-			transform: scale(0.5) rotate(0deg);
-		}
-		50% {
-			opacity: 1;
-			transform: scale(1.2) rotate(180deg);
-		}
-		100% {
-			opacity: 1;
-			transform: scale(1) rotate(360deg);
-		}
-	}
 
 	@media (max-width: 768px) {
 		.home {

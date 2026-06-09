@@ -1,0 +1,50 @@
+flowchart TD
+    A([🔬 Tamizaje PAP\nMatrona interpreta resultado]) --> B{¿Estado de PAP?}
+
+    B -- NORMAL --> C[📞 TENS:\nLlamado telefónico 1\n⏱ máx 48 hrs]
+    B -- REPETIR TOMA --> RT[📅 Agendar nueva toma\n⏱ dentro de 5 días]
+    B -- CONFIRMADO --> SEC[🏥 NIVEL SECUNDARIO\nEmitir derivación GES]
+
+    RT --> RT2[📞 Llamado previo\na la cita]
+    RT2 --> RTF([✅ Cierre / seguimiento])
+    SEC --> SEC2([📋 Registro derivación\ncierre nivel primario])
+
+    C -- Contacta --> REG1([✅ Cierre de Caso\n+ Registro])
+    C -- No contacta --> C2[📞 Llamado 2\n⏱ +48 hrs]
+    C2 -- No contacta --> C3[📞 Llamado 3\n⏱ +72 hrs]
+    C3 -- No contacta --> EXC[⚠️ Excepción garantía\nMatrona notificada]
+
+    EXC --> T2[📞 TENS:\nLlamada única\n⏱ máx 24 hrs]
+    T2 -- Contacta --> REG2([✅ Cierre de Caso\n+ Registro])
+    T2 -- No contacta --> SMS[💬 SMS / WhatsApp\n⏱ mismo día]
+
+    SMS -- Responde --> REG3([✅ Cierre de Caso\n+ Registro])
+    SMS -- No responde --> CARTA[✉️ Carta Certificada\n⏱ dentro de 5 días hábiles]
+
+    CARTA -- Contacta --> REG4([✅ Cierre de Caso\n+ Registro])
+    CARTA -- No contacta --> VD[🏠 Visita Domiciliaria\n⏱ dentro de 10 días]
+
+    VD -- Contacta --> REG5([✅ Cierre de Caso\n+ Registro])
+    VD -- No contacta --> NADM[📁 Caso Inubicable\nRegistro + Notificación SOME]
+
+    style A fill:#c0392b,color:#fff,rx:20
+    style B fill:#e05c5c,color:#fff
+    style C fill:#e07070,color:#fff
+    style C2 fill:#e07070,color:#fff
+    style C3 fill:#e07070,color:#fff
+    style EXC fill:#d45555,color:#fff
+    style T2 fill:#e07070,color:#fff
+    style SMS fill:#5b8dd9,color:#fff
+    style CARTA fill:#e07070,color:#fff
+    style VD fill:#e07070,color:#fff
+    style RT fill:#e08c3c,color:#fff
+    style RT2 fill:#e08c3c,color:#fff
+    style SEC fill:#c0392b,color:#fff
+    style SEC2 fill:#888,color:#fff
+    style NADM fill:#555,color:#fff
+    style REG1 fill:#4a9e6b,color:#fff
+    style REG2 fill:#4a9e6b,color:#fff
+    style REG3 fill:#4a9e6b,color:#fff
+    style REG4 fill:#4a9e6b,color:#fff
+    style REG5 fill:#4a9e6b,color:#fff
+    style RTF fill:#4a9e6b,color:#fff

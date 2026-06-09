@@ -1,6 +1,9 @@
 <script lang="ts">
 	import TarotCard from './TarotCard.svelte';
 	import type { CartaTarot } from '$lib/types';
+	import gsap from 'gsap';
+	import { tick } from 'svelte';
+	import { SvelteSet } from 'svelte/reactivity';
 
 	interface Props {
 		numCartas: number;
@@ -47,7 +50,7 @@
 
 	let cartasSeleccionadas = $state<CartaTarot[]>([]);
 	let cartasDisponibles = $state<number[]>([]);
-	let animatingCards = $state<Set<number>>(new Set());
+	let animatingCards = new SvelteSet<number>();
 
 	// Función para barajar array (Fisher-Yates shuffle)
 	function barajarArray<T>(array: T[]): T[] {
@@ -74,19 +77,20 @@
 		// Verificar que la carta aún esté disponible
 		if (!cartasDisponibles.includes(index)) return;
 
-		// Remover de cartas disponibles INMEDIATAMENTE para prevenir doble selección
-		cartasDisponibles = cartasDisponibles.filter(c => c !== index);
-
 		const posicionDestino = cartasSeleccionadas.length;
 
 		// Las cartas nunca están invertidas
 		const invertida = false;
 
-		// Marcar carta como animando
+		// Marcar como animando PRIMERO (esto la oculta con CSS)
 		animatingCards.add(index);
 
-		// Obtener elementos para FLIP
-		const cardElement = event?.currentTarget as HTMLElement;
+		// Wait for Svelte to update the DOM with the animating class
+		await tick();
+
+		// Obtener elementos para FLIP - use correct selector based on spread type
+		const cardSelector = (numCartas === 10 || numCartas === 13) ? '.deck-card' : '.fan-card-wrapper';
+		const cardElement = (event?.target as HTMLElement)?.closest(cardSelector) as HTMLElement;
 
 		// Selector correcto según el tipo de tirada
 		let slotSelector;
@@ -106,7 +110,7 @@
 
 			// Agregar la carta seleccionada (esto causa el DOM update)
 			cartasSeleccionadas.push({
-				arcano: `carta_${index}`,
+				arcano: `${index}`,  // ID del arcano (0-21)
 				invertida,
 				posicion: posicionDestino
 			});
@@ -130,154 +134,154 @@
 				const isTiradaEspecial = numCartas === 10 || numCartas === 13;
 
 				if (isTiradaEspecial) {
-					// Animación simplificada: ZOOM en el centro de la pantalla para revelar la carta
-					// Calcular posición del centro absoluto del viewport
+					// GSAP animation for Cruz Celta and Tirada del Año
+					// Calculate viewport center
 					const viewportCenterX = window.innerWidth / 2;
 					const viewportCenterY = window.innerHeight / 2;
-
-					// Posición actual de la carta en la pantalla
 					const currentCardCenterX = last.left + last.width / 2;
 					const currentCardCenterY = last.top + last.height / 2;
-
-					// Delta para mover la carta al centro de la pantalla
 					const deltaToScreenCenterX = viewportCenterX - currentCardCenterX;
 					const deltaToScreenCenterY = viewportCenterY - currentCardCenterY;
 
-					const animation = newCardElement.animate([
-						// Keyframe 0: Posición inicial (en el mazo, boca abajo)
-						{
-							transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaScale}) rotateY(0deg)`,
-							opacity: 1,
-							zIndex: 9999
-						},
-						// Keyframe 1: Inicio del flip - despegue (10%)
-						{
-							transform: `translate(${deltaX * 0.9}px, ${deltaY * 0.9}px) scale(${deltaScale * 1.05}) rotateY(30deg)`,
-							opacity: 1,
-							offset: 0.10,
-							zIndex: 9999
-						},
-						// Keyframe 2: Flip continuando, elevándose (15%)
-						{
-							transform: `translate(${deltaX * 0.8}px, ${deltaY * 0.8}px) scale(${deltaScale * 1.15}) rotateY(60deg)`,
-							opacity: 1,
-							offset: 0.15,
-							zIndex: 9999
-						},
-						// Keyframe 3: Medio flip, avanzando hacia centro (20%)
-						{
-							transform: `translate(${deltaX * 0.7 + deltaToScreenCenterX * 0.3}px, ${deltaY * 0.7 + deltaToScreenCenterY * 0.3}px) scale(${deltaScale * 1.25}) rotateY(90deg)`,
-							opacity: 1,
-							offset: 0.20,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 20px rgba(245, 158, 11, 0.4))'
-						},
-						// Keyframe 4: Continúa flip suavemente (27%)
-						{
-							transform: `translate(${deltaX * 0.5 + deltaToScreenCenterX * 0.5}px, ${deltaY * 0.5 + deltaToScreenCenterY * 0.5}px) scale(${deltaScale * 1.5}) rotateY(150deg)`,
-							opacity: 1,
-							offset: 0.27,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 25px rgba(245, 158, 11, 0.5))'
-						},
-						// Keyframe 5: Acercándose al centro (32%)
-						{
-							transform: `translate(${deltaX * 0.3 + deltaToScreenCenterX * 0.7}px, ${deltaY * 0.3 + deltaToScreenCenterY * 0.7}px) scale(${1.8}) rotateY(210deg)`,
-							opacity: 1,
-							offset: 0.32,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 30px rgba(245, 158, 11, 0.6))'
-						},
-						// Keyframe 6: Casi en el centro, completando flip (37%)
-						{
-							transform: `translate(${deltaToScreenCenterX * 0.95}px, ${deltaToScreenCenterY * 0.95}px) scale(2.3) rotateY(270deg)`,
-							opacity: 1,
-							offset: 0.37,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 35px rgba(245, 158, 11, 0.7))'
-						},
-						// Keyframe 7: Llegar al centro, ajuste final del flip (42%)
-						{
-							transform: `translate(${deltaToScreenCenterX}px, ${deltaToScreenCenterY}px) scale(2.7) rotateY(330deg)`,
-							opacity: 1,
-							offset: 0.42,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 50px rgba(245, 158, 11, 0.9))'
-						},
-						// Keyframe 8: ZOOM GRANDE en el CENTRO, carta REVELADA con texto derecho (45%)
-						{
-							transform: `translate(${deltaToScreenCenterX}px, ${deltaToScreenCenterY}px) scale(3) rotateY(360deg)`,
-							opacity: 1,
-							offset: 0.45,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 60px rgba(245, 158, 11, 1))'
-						},
-						// Keyframe 9: Mantener ZOOM - tiempo extendido para ver bien la carta (80%)
-						{
-							transform: `translate(${deltaToScreenCenterX}px, ${deltaToScreenCenterY}px) scale(3) rotateY(360deg)`,
-							opacity: 1,
-							offset: 0.80,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 60px rgba(245, 158, 11, 1))'
-						},
-						// Keyframe 10: Reducir zoom suavemente y empezar a desplazarse (90%)
-						{
-							transform: `translate(${deltaToScreenCenterX * 0.4}px, ${deltaToScreenCenterY * 0.4}px) scale(1.8) rotateY(360deg)`,
-							opacity: 1,
-							offset: 0.90,
-							zIndex: 9999,
-							filter: 'drop-shadow(0 0 30px rgba(245, 158, 11, 0.6))'
-						},
-						// Keyframe 11: Llegar a posición final, mantener vuelta completa (texto derecho)
-						{
-							transform: 'translate(0, 0) scale(1) rotateY(360deg)',
-							opacity: 1,
-							zIndex: 'auto',
-							filter: 'none'
-						}
-					], {
-						duration: 3200,
-						easing: 'ease-in-out',
-						fill: 'forwards'
+					// Set initial position
+					gsap.set(newCardElement, {
+						x: deltaX,
+						y: deltaY,
+						scale: deltaScale,
+						rotationY: 0,
+						zIndex: 9999,
+						force3D: true
 					});
 
-					await animation.finished;
+					const tl = gsap.timeline();
+
+					// Phase 1: Lift off and start flip (0.3s)
+					tl.to(newCardElement, {
+						x: deltaX * 0.7 + deltaToScreenCenterX * 0.3,
+						y: deltaY * 0.7 + deltaToScreenCenterY * 0.3,
+						scale: deltaScale * 1.3,
+						rotationY: 90,
+						filter: 'brightness(1.3) drop-shadow(0 0 25px rgba(224, 122, 60, 0.5))',
+						duration: 0.3,
+						ease: 'power2.out',
+						force3D: true
+					});
+
+					// Phase 2: Continue to center with full flip (0.4s)
+					tl.to(newCardElement, {
+						x: deltaToScreenCenterX,
+						y: deltaToScreenCenterY,
+						scale: 3,
+						rotationY: 360,
+						filter: 'brightness(1.5) drop-shadow(0 0 60px rgba(224, 122, 60, 1))',
+						duration: 0.4,
+						ease: 'power2.inOut',
+						force3D: true
+					});
+
+					// Phase 3: Hold at center zoom (0.8s)
+					tl.to(newCardElement, {
+						duration: 0.8,
+						ease: 'none'
+					});
+
+					// Phase 4: Return to position (0.6s)
+					tl.to(newCardElement, {
+						x: 0,
+						y: 0,
+						scale: 1,
+						rotationY: 360,
+						filter: 'brightness(1) drop-shadow(0 0 0px rgba(224, 122, 60, 0))',
+						zIndex: 'auto',
+						duration: 0.6,
+						ease: 'power2.inOut',
+						force3D: true
+					});
+
+					await tl.then();
 				} else {
-					// Animación normal para otras tiradas
-					const animation = newCardElement.animate([
+					// GSAP animation for 3-card spread
+
+					// The card is inside a positioning wrapper, so we need to animate the wrapper
+					// to avoid conflicting with existing transform positioning
+					const wrapper = newCardElement.parentElement;
+
+					if (!wrapper) {
+						console.error('No wrapper found for animation');
+						// Keep card hidden even if animation fails
+						return;
+					}
+
+					// Create a timeline for complex sequenced animation
+					const tl = gsap.timeline();
+
+					// Animate the wrapper (preserves fan positioning)
+					tl.fromTo(wrapper,
 						{
-							transform: `translate(${deltaX}px, ${deltaY}px) scale(${deltaScale}) rotateY(0deg) rotateZ(${Math.random() * 40 - 20}deg)`,
-							opacity: 0.8
+							scale: 0.8,
+							y: 0,
+							rotationY: 0,
+							force3D: true
 						},
 						{
-							transform: `translate(${deltaX * 0.5}px, ${deltaY * 0.5 - 50}px) scale(${1 + deltaScale * 0.2}) rotateY(180deg) rotateZ(${Math.random() * 20 - 10}deg)`,
-							opacity: 0.9,
-							offset: 0.5
-						},
-						{
-							transform: 'translate(0, 0) scale(1) rotateY(360deg) rotateZ(0deg)',
-							opacity: 1
+							scale: 1.3,
+							y: -120,
+							rotationY: 180,
+							duration: 0.6,
+							ease: 'back.out(1.7)',
+							force3D: true
 						}
-					], {
-						duration: 1000,
-						easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-						fill: 'forwards'
+					);
+
+					// Animate the card's filter separately
+					tl.fromTo(newCardElement,
+						{
+							filter: 'brightness(1)'
+						},
+						{
+							filter: 'brightness(1.5) drop-shadow(0 0 35px rgba(224, 122, 60, 0.9))',
+							duration: 0.6,
+							ease: 'back.out(1.7)'
+						},
+						0 // Start at the same time
+					);
+
+					// Second phase: settle down
+					tl.to(wrapper, {
+						scale: 1,
+						y: 0,
+						rotationY: 360,
+						duration: 0.6,
+						ease: 'power2.inOut',
+						force3D: true
 					});
 
-					await animation.finished;
+					tl.to(newCardElement, {
+						filter: 'brightness(1) drop-shadow(0 0 0px rgba(224, 122, 60, 0))',
+						duration: 0.6,
+						ease: 'power2.inOut'
+					}, '-=0.6');
+
+					await tl.then();
+
+					// Don't remove from array - just keep it hidden in animatingCards
+					// Removing from array causes position shifts for remaining cards
+
+					// Don't delete from animatingCards either - keep it hidden permanently
+					// animatingCards.delete(index);
 				}
 			}
 		} else {
 			// Fallback sin animación
 			cartasSeleccionadas.push({
-				arcano: `carta_${index}`,
+				arcano: `${index}`,  // ID del arcano (0-21)
 				invertida,
 				posicion: posicionDestino
 			});
-		}
 
-		// Limpiar estado de animación
-		animatingCards.delete(index);
+			// Keep card hidden in animatingCards for fallback path too
+			// Don't remove from array or delete from animatingCards
+		}
 	}
 
 
@@ -293,11 +297,11 @@
 	}
 
 	function estaSeleccionada(index: number): boolean {
-		return cartasSeleccionadas.some(c => c.arcano === `carta_${index}`);
+		return cartasSeleccionadas.some(c => c.arcano === `${index}`);
 	}
 
 	function obtenerPosicion(index: number): number | undefined {
-		const carta = cartasSeleccionadas.find(c => c.arcano === `carta_${index}`);
+		const carta = cartasSeleccionadas.find(c => c.arcano === `${index}`);
 		return carta?.posicion;
 	}
 </script>
@@ -311,6 +315,7 @@
 				{#each cartasDisponibles as cardIndex, i (cardIndex)}
 					<div
 						class="deck-card"
+						class:animating={animatingCards.has(cardIndex)}
 						style="--card-index: {i};"
 						onclick={(e) => seleccionarCarta(cardIndex, e)}
 					>
@@ -335,7 +340,7 @@
 						<div class="position-card-wrapper">
 							{#if cartasSeleccionadas[i]}
 								{@const carta = cartasSeleccionadas[i]}
-								{@const cartaIndex = parseInt(carta.arcano.split('_')[1])}
+								{@const cartaIndex = parseInt(carta.arcano)}
 								<TarotCard
 									selected={true}
 									invertida={false}
@@ -367,6 +372,7 @@
 				{#each cartasDisponibles as cardIndex, i (cardIndex)}
 					<div
 						class="deck-card"
+						class:animating={animatingCards.has(cardIndex)}
 						style="--card-index: {i};"
 						onclick={(e) => seleccionarCarta(cardIndex, e)}
 					>
@@ -391,7 +397,7 @@
 						<div class="position-card-wrapper">
 							{#if cartasSeleccionadas[i]}
 								{@const carta = cartasSeleccionadas[i]}
-								{@const cartaIndex = parseInt(carta.arcano.split('_')[1])}
+								{@const cartaIndex = parseInt(carta.arcano)}
 								<TarotCard
 									selected={true}
 									invertida={false}
@@ -423,6 +429,7 @@
 				{#each cartasDisponibles as index, i}
 					<div
 						class="fan-card-wrapper"
+						class:animating={animatingCards.has(index)}
 						style="--card-index: {i}; --total-cards: 22;"
 						onclick={(e) => seleccionarCarta(index, e)}
 					>
@@ -446,7 +453,7 @@
 					<div class="card-wrapper">
 						{#if cartasSeleccionadas[i]}
 							{@const carta = cartasSeleccionadas[i]}
-							{@const cartaIndex = parseInt(carta.arcano.split('_')[1])}
+							{@const cartaIndex = parseInt(carta.arcano)}
 							<TarotCard
 								selected={true}
 								invertida={false}
@@ -534,22 +541,48 @@
 
 	.deck-card {
 		position: absolute;
-		left: 50%;
+		/* S-shape formation using sine wave */
+		--s-curve-offset: calc(sin(var(--card-index) * 0.3) * 60px);
+		/* Hover tilt direction follows the curve (derivative of sine is cosine) */
+		--hover-tilt-direction: calc(cos(var(--card-index) * 0.3) * 6deg);
+		left: calc(50% + var(--s-curve-offset));
 		transform: translateX(-50%);
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: all 0.4s cubic-bezier(0.34, 1.3, 0.64, 1);
 		cursor: pointer;
-		top: calc(20px + var(--card-index) * 18px);
+		top: calc(20px + var(--card-index) * 22px);
+
+		/* Entrance animation for deck cards */
+		animation: deckCardEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+		animation-delay: calc(var(--card-index) * 0.035s);
+	}
+
+	@keyframes deckCardEnter {
+		from {
+			opacity: 0;
+			transform: translateX(-50%) translateY(-40px) rotate(15deg) scale(0.7);
+		}
+		to {
+			opacity: 1;
+			transform: translateX(-50%) translateY(0) rotate(0deg) scale(1);
+		}
+	}
+
+	.deck-card.animating {
+		opacity: 0 !important;
+		pointer-events: none;
+		transition: none;
+		visibility: hidden;
 	}
 
 	.deck-card:hover {
-		transform: translateX(calc(-50% + 30px));
-		z-index: 100;
-		filter: drop-shadow(0 8px 20px rgba(224, 122, 60, 0.7));
+		transform: translateX(-50%) scale(1.08) rotate(var(--hover-tilt-direction)) translateY(-4px);
+		filter: brightness(1.15) drop-shadow(0 8px 20px rgba(224, 122, 60, 0.5));
 	}
 
 	.deck-card :global(.tarot-card) {
-		width: 120px;
-		height: 200px;
+		/* Deck cards: responsive sizing */
+		width: clamp(90px, 7vw, 130px);
+		height: clamp(150px, 11.7vw, 217px);
 	}
 
 	/* Contenedor derecho: Diagrama de la Cruz */
@@ -578,6 +611,7 @@
 		display: flex;
 		align-items: center;
 		gap: var(--spacing-sm);
+		z-index: 1;
 	}
 
 	.position-card-wrapper {
@@ -585,13 +619,15 @@
 	}
 
 	.celtic-position :global(.tarot-card) {
-		width: 85px;
-		height: 142px;
+		/* Celtic cross cards: responsive sizing (smaller than deck) */
+		width: clamp(60px, 5vw, 95px);
+		height: clamp(100px, 8.3vw, 158px);
 	}
 
 	.celtic-position .empty-spread-slot {
-		width: 85px;
-		height: 142px;
+		/* Match card size */
+		width: clamp(60px, 5vw, 95px);
+		height: clamp(100px, 8.3vw, 158px);
 	}
 
 	.celtic-position .empty-spread-slot .slot-number {
@@ -637,7 +673,7 @@
 
 	.spread-position {
 		position: absolute;
-		transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: none;
 	}
 
 	.card-wrapper {
@@ -647,8 +683,8 @@
 		gap: var(--spacing-sm);
 	}
 
-	.card-wrapper :global(.tarot-card) {
-		will-change: transform, opacity;
+	.card-wrapper:hover :global(.tarot-card) {
+		/* Hover effect removed - only deck cards should have hover */
 	}
 
 	.card-label {
@@ -658,12 +694,23 @@
 		text-transform: uppercase;
 		letter-spacing: 1px;
 		text-align: center;
-		background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+		background: linear-gradient(135deg, var(--color-primary), var(--color-secondary), var(--color-primary));
+		background-size: 200% 100%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
-		text-shadow: 0 2px 8px rgba(224, 122, 60, 0.3);
 		padding-top: var(--spacing-xs);
+		animation: labelShine 3s ease-in-out infinite;
+		filter: drop-shadow(0 2px 8px rgba(224, 122, 60, 0.4));
+	}
+
+	@keyframes labelShine {
+		0%, 100% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
 	}
 
 	/* 3-card spread: Past-Present-Future (horizontal line) */
@@ -693,6 +740,29 @@
 
 	.spread-layout[data-card-count="3"] .spread-position[data-position="2"] {
 		transform: rotate(8deg);
+	}
+
+	/* Disable ALL hover effects for 3-card spread */
+	.spread-layout[data-card-count="3"] :global(.tarot-card) {
+		transform: none !important;
+		transition: none !important;
+		will-change: auto !important;
+	}
+
+	.spread-layout[data-card-count="3"] :global(.tarot-card:hover) {
+		transform: none !important;
+		transition: none !important;
+		will-change: auto !important;
+	}
+
+	.spread-layout[data-card-count="3"] :global(.tarot-card .card-inner) {
+		transform: none !important;
+		transition: none !important;
+	}
+
+	.spread-layout[data-card-count="3"] :global(.tarot-card:hover .card-inner) {
+		transform: none !important;
+		transition: none !important;
 	}
 
 	/* 5-card spread: Cross pattern */
@@ -757,7 +827,7 @@
 		left: 35%;
 		top: 50%;
 		transform: translate(-50%, -50%) rotate(90deg);
-		z-index: 2; /* Menor que z-index de animación (9999) */
+		z-index: 1;
 	}
 
 	/* Carta 3: Influencias Pasadas (izquierda de la cruz) */
@@ -832,16 +902,19 @@
 		flex-direction: column;
 		align-items: center;
 		gap: 4px;
+		z-index: 1;
 	}
 
 	.wheel-position :global(.tarot-card) {
-		width: 70px;
-		height: 117px;
+		/* Wheel of the year cards: responsive sizing (smallest) */
+		width: clamp(50px, 4vw, 80px);
+		height: clamp(83px, 6.7vw, 133px);
 	}
 
 	.wheel-position .empty-spread-slot {
-		width: 70px;
-		height: 117px;
+		/* Match card size */
+		width: clamp(50px, 4vw, 80px);
+		height: clamp(83px, 6.7vw, 133px);
 	}
 
 	.wheel-position .empty-spread-slot .slot-number {
@@ -958,18 +1031,20 @@
 		left: 300px;
 		top: 300px;
 		transform: translate(-50%, -50%);
-		z-index: 10; /* Menor que z-index de animación (9999) */
+		z-index: 1;
 	}
 
 	.wheel-position[data-position="12"] :global(.tarot-card) {
-		width: 85px;
-		height: 142px;
+		/* Center card (El Año): larger than other wheel cards */
+		width: clamp(60px, 5vw, 95px);
+		height: clamp(100px, 8.3vw, 158px);
 		box-shadow: 0 0 40px rgba(245, 158, 11, 0.5);
 	}
 
 	.wheel-position[data-position="12"] .empty-spread-slot {
-		width: 85px;
-		height: 142px;
+		/* Match center card size */
+		width: clamp(60px, 5vw, 95px);
+		height: clamp(100px, 8.3vw, 158px);
 	}
 
 	.wheel-position[data-position="12"] .position-label {
@@ -982,8 +1057,9 @@
 
 	/* Empty spread slot with glow effect */
 	.empty-spread-slot {
-		width: 120px;
-		height: 200px;
+		/* Base responsive sizing for generic slots */
+		width: clamp(80px, 8vw, 150px);
+		height: clamp(133px, 13.3vw, 250px);
 		border: 2px dashed var(--color-border);
 		border-radius: var(--radius-lg);
 		display: flex;
@@ -993,6 +1069,23 @@
 		background: linear-gradient(135deg, rgba(224, 122, 60, 0.05), rgba(139, 90, 60, 0.08));
 		position: relative;
 		overflow: hidden;
+		transition: all 0.4s cubic-bezier(0.34, 1.3, 0.64, 1);
+		animation: slotBreathe 3s ease-in-out infinite;
+	}
+
+	@keyframes slotBreathe {
+		0%, 100% {
+			transform: scale(1);
+			border-color: var(--color-border);
+		}
+		50% {
+			transform: scale(1.02);
+			border-color: rgba(224, 122, 60, 0.4);
+		}
+	}
+
+	.empty-spread-slot:hover {
+		/* Hover effect removed */
 	}
 
 	.slot-glow {
@@ -1000,23 +1093,49 @@
 		inset: 0;
 		background: radial-gradient(
 			circle at center,
-			rgba(224, 122, 60, 0.2) 0%,
-			rgba(224, 122, 60, 0.1) 40%,
+			rgba(224, 122, 60, 0.25) 0%,
+			rgba(224, 122, 60, 0.15) 40%,
 			transparent 70%
 		);
-		animation: pulse 2s ease-in-out infinite;
+		animation: pulse 2.5s ease-in-out infinite;
 		pointer-events: none;
+	}
+
+	@keyframes pulse {
+		0%, 100% {
+			opacity: 0.6;
+			transform: scale(1);
+		}
+		50% {
+			opacity: 1;
+			transform: scale(1.1);
+		}
 	}
 
 	.slot-number {
 		font-size: 2rem;
 		font-weight: 700;
-		background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+		background: linear-gradient(135deg,
+			var(--color-primary),
+			var(--color-secondary),
+			var(--color-primary));
+		background-size: 200% 100%;
 		-webkit-background-clip: text;
 		-webkit-text-fill-color: transparent;
 		background-clip: text;
 		position: relative;
 		z-index: 1;
+		animation: slotNumberShine 3s ease-in-out infinite;
+		filter: drop-shadow(0 0 8px rgba(224, 122, 60, 0.5));
+	}
+
+	@keyframes slotNumberShine {
+		0%, 100% {
+			background-position: 0% 50%;
+		}
+		50% {
+			background-position: 100% 50%;
+		}
 	}
 
 	/* Card arc effect */
@@ -1045,15 +1164,16 @@
 		left: 50%;
 		top: 50%;
 		transform-origin: center center;
-		transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+		transition: transform 0.2s ease-out, filter 0.2s ease-out;
 		cursor: pointer;
-		will-change: transform;
 
 		/* Calculate arc positioning based on card index - inverted arc */
+		/* Aumentado de 7deg a 9deg para más separación */
 		--rotation-angle: calc(
-			(var(--card-index) - (var(--total-cards) - 1) / 2) * 7deg
+			(var(--card-index) - (var(--total-cards) - 1) / 2) * 9deg
 		);
-		--arc-radius: 280px;
+		/* Aumentado el radio para más espacio horizontal */
+		--arc-radius: 340px;
 		--arc-offset-x: calc(sin(var(--rotation-angle)) * var(--arc-radius));
 		--arc-offset-y: calc((1 - cos(var(--rotation-angle))) * var(--arc-radius) * 0.6);
 
@@ -1061,20 +1181,55 @@
 			translate(-50%, -50%)
 			translate(var(--arc-offset-x), var(--arc-offset-y))
 			rotate(var(--rotation-angle));
+
+		/* Staggered entrance animation */
+		animation: fanCardEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+		animation-delay: calc(var(--card-index) * 0.022s);
+
+		/* Aumentar área clickeable */
+		padding: 20px;
+		margin: -20px;
 	}
 
-	.fan-card-wrapper:hover {
-		--hover-radius: 320px;
-		--arc-offset-x: calc(sin(var(--rotation-angle)) * var(--hover-radius));
-		--arc-offset-y: calc((1 - cos(var(--rotation-angle))) * var(--hover-radius) * 0.6);
+	@keyframes fanCardEnter {
+		from {
+			opacity: 0;
+			transform:
+				translate(-50%, -50%)
+				translate(0, 0)
+				rotate(0deg)
+				scale(0.3);
+		}
+		to {
+			opacity: 1;
+		}
+	}
 
+	/* Hide animating cards from the fan */
+	.fan-card-wrapper.animating {
+		opacity: 0 !important;
+		pointer-events: none;
+		transition: none;
+		visibility: hidden;
+	}
+
+	.fan-card-wrapper:hover:not(.animating) {
+		/* Subtle hover effect - move outward along the arc radius */
+		--hover-distance: 30px;
 		transform:
 			translate(-50%, -50%)
-			translate(var(--arc-offset-x), var(--arc-offset-y))
+			translate(
+				calc(var(--arc-offset-x) + sin(var(--rotation-angle)) * var(--hover-distance)),
+				calc(var(--arc-offset-y) - cos(var(--rotation-angle)) * var(--hover-distance))
+			)
 			rotate(var(--rotation-angle))
-			scale(1.15);
-		z-index: 10;
-		filter: drop-shadow(0 10px 30px rgba(224, 122, 60, 0.6));
+			scale(1.05);
+		filter: brightness(1.15) drop-shadow(0 8px 20px rgba(224, 122, 60, 0.6));
+	}
+
+	/* Hacer que las cartas vecinas se separen un poco al hacer hover */
+	.fan-card-wrapper:hover ~ .fan-card-wrapper {
+		/* Hover effect removed */
 	}
 
 	.confirmation-section {
@@ -1114,19 +1269,36 @@
 		}
 	}
 
-	@keyframes pulseGlow {
-		0%, 100% {
-			box-shadow:
-				0 8px 32px rgba(0, 0, 0, 0.4),
-				0 0 60px rgba(168, 85, 247, 0.3),
-				inset 0 1px 0 rgba(255, 255, 255, 0.1);
+	@keyframes cardFly {
+		0% {
+			transform: scale(0.8);
+			opacity: 0.8;
+			filter: brightness(1);
+		}
+		20% {
+			transform: translateY(-100px) scale(1.2) rotateY(90deg) rotateZ(15deg);
+			opacity: 1;
+			filter: brightness(1.3) drop-shadow(0 0 25px rgba(224, 122, 60, 0.6));
 		}
 		50% {
-			box-shadow:
-				0 8px 32px rgba(0, 0, 0, 0.4),
-				0 0 100px rgba(168, 85, 247, 0.5),
-				0 0 140px rgba(139, 92, 246, 0.3),
-				inset 0 1px 0 rgba(255, 255, 255, 0.1);
+			transform: translateY(-150px) scale(1.4) rotateY(180deg) rotateZ(0deg);
+			opacity: 1;
+			filter: brightness(1.5) drop-shadow(0 0 35px rgba(224, 122, 60, 0.8));
+		}
+		70% {
+			transform: translateY(-80px) scale(1.2) rotateY(270deg) rotateZ(-10deg);
+			opacity: 1;
+			filter: brightness(1.3) drop-shadow(0 0 25px rgba(224, 122, 60, 0.6));
+		}
+		90% {
+			transform: translateY(-10px) scale(1.05) rotateY(350deg) rotateZ(0deg);
+			opacity: 1;
+			filter: brightness(1.1) drop-shadow(0 0 15px rgba(224, 122, 60, 0.4));
+		}
+		100% {
+			transform: translateY(0) scale(1) rotateY(360deg) rotateZ(0deg);
+			opacity: 1;
+			filter: brightness(1) drop-shadow(0 0 0px rgba(224, 122, 60, 0));
 		}
 	}
 
@@ -1205,25 +1377,7 @@
 		animation: sparkle 1.5s ease-in-out infinite;
 	}
 
-	@keyframes sparkle {
-		0%, 100% {
-			transform: scale(1) rotate(0deg);
-			opacity: 1;
-		}
-		50% {
-			transform: scale(1.2) rotate(180deg);
-			opacity: 0.8;
-		}
-	}
 
-	@keyframes gradientShift {
-		0%, 100% {
-			background-position: 0% 50%;
-		}
-		50% {
-			background-position: 100% 50%;
-		}
-	}
 
 	@media (max-width: 768px) {
 		.card-selection {
@@ -1260,10 +1414,10 @@
 			min-height: 350px;
 		}
 
-		/* Smaller empty slots on mobile */
+		/* Smaller empty slots on mobile - inherit responsive sizing from base */
 		.empty-spread-slot {
-			width: 90px;
-			height: 150px;
+			width: clamp(70px, 12vw, 110px);
+			height: clamp(117px, 20vw, 183px);
 		}
 
 		.slot-number {
@@ -1282,24 +1436,33 @@
 		}
 
 		.fan-card-wrapper {
+			/* Mayor separación en mobile: de 5deg a 7deg */
 			--rotation-angle: calc(
-				(var(--card-index) - (var(--total-cards) - 1) / 2) * 5deg
+				(var(--card-index) - (var(--total-cards) - 1) / 2) * 7deg
 			);
-			--arc-radius: 180px;
+			/* Radio más grande para más espacio */
+			--arc-radius: 220px;
 			--arc-offset-x: calc(sin(var(--rotation-angle)) * var(--arc-radius));
 			--arc-offset-y: calc((1 - cos(var(--rotation-angle))) * var(--arc-radius) * 0.5);
+
+			/* Más padding en mobile para área táctil más grande */
+			padding: 30px;
+			margin: -30px;
 		}
 
-		.fan-card-wrapper:hover {
-			--hover-radius: 210px;
-			--arc-offset-x: calc(sin(var(--rotation-angle)) * var(--hover-radius));
-			--arc-offset-y: calc((1 - cos(var(--rotation-angle))) * var(--hover-radius) * 0.5);
-
+		.fan-card-wrapper:hover,
+		.fan-card-wrapper:active {
+			/* Subtle hover effect for mobile - move outward along the arc radius */
+			--hover-distance: 30px;
 			transform:
 				translate(-50%, -50%)
-				translate(var(--arc-offset-x), var(--arc-offset-y))
+				translate(
+					calc(var(--arc-offset-x) + sin(var(--rotation-angle)) * var(--hover-distance)),
+					calc(var(--arc-offset-y) - cos(var(--rotation-angle)) * var(--hover-distance))
+				)
 				rotate(var(--rotation-angle))
-				scale(1.1);
+				scale(1.05);
+			filter: brightness(1.15) drop-shadow(0 8px 20px rgba(224, 122, 60, 0.6));
 		}
 
 		.confirmation-section {
